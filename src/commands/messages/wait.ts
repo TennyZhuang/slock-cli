@@ -23,8 +23,8 @@ export function registerWaitCommand(parent: Command): void {
       "--target <target>",
       "Target: #channel, dm:@peer, #channel:threadid, dm:@peer:threadid"
     )
-    .option("--after <seq>", "Wait for messages after this sequence number")
-    .option("--timeout <seconds>", "Timeout in seconds", "30")
+    .option("--after <seq>", "Wait for messages after this seq (omit to use current latest — only future messages)")
+    .option("--timeout <seconds>", "Timeout in seconds (exit code 5 on timeout)", "30")
     .action(async (opts) => {
       let target;
       try {

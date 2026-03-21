@@ -22,6 +22,11 @@ import { registerChannelListCommand } from "./commands/channels/list.js";
 import { registerChannelJoinCommand } from "./commands/channels/join.js";
 import { registerChannelCreateCommand } from "./commands/channels/create.js";
 import { registerServerInfoCommand } from "./commands/server/info.js";
+import { registerTaskListCommand } from "./commands/tasks/list.js";
+import { registerTaskCreateCommand } from "./commands/tasks/create.js";
+import { registerTaskClaimCommand } from "./commands/tasks/claim.js";
+import { registerTaskUnclaimCommand } from "./commands/tasks/unclaim.js";
+import { registerTaskUpdateCommand } from "./commands/tasks/update.js";
 
 const program = new Command();
 
@@ -64,56 +69,15 @@ registerChannelListCommand(channelsCmd);
 registerChannelJoinCommand(channelsCmd);
 registerChannelCreateCommand(channelsCmd);
 
-// ── tasks (placeholder for Phase 3) ────────────────────
+// ── tasks ───────────────────────────────────────────────
 const tasksCmd = program
   .command("tasks")
   .description("Task board operations");
-tasksCmd
-  .command("list")
-  .description("List tasks")
-  .requiredOption("--target <target>", "Channel target")
-  .option("--status <status>", "Filter by status")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 3");
-  });
-tasksCmd
-  .command("create")
-  .description("Create tasks")
-  .requiredOption("--target <target>", "Channel target")
-  .requiredOption("--title <titles...>", "Task title(s) — variadic, e.g.: --title 'Fix bug' 'Add feature'")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 3");
-  });
-tasksCmd
-  .command("claim")
-  .description("Claim tasks")
-  .requiredOption("--target <target>", "Channel target")
-  .requiredOption("--number <numbers...>", "Task number(s) — variadic, e.g.: --number 1 3 5")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 3");
-  });
-tasksCmd
-  .command("unclaim")
-  .description("Unclaim a task")
-  .requiredOption("--target <target>", "Channel target")
-  .requiredOption("--number <n>", "Task number")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 3");
-  });
-tasksCmd
-  .command("update")
-  .description("Update task status")
-  .requiredOption("--target <target>", "Channel target")
-  .requiredOption("--number <n>", "Task number")
-  .requiredOption("--status <status>", "New status: todo, in_progress, in_review, done")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 3");
-  });
+registerTaskListCommand(tasksCmd);
+registerTaskCreateCommand(tasksCmd);
+registerTaskClaimCommand(tasksCmd);
+registerTaskUnclaimCommand(tasksCmd);
+registerTaskUpdateCommand(tasksCmd);
 
 // ── server ──────────────────────────────────────────────
 const serverCmd = program

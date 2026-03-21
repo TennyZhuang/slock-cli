@@ -103,7 +103,7 @@ describe("E2E smoke tests", () => {
 
   it("unimplemented commands return JSON error", () => {
     const { stdout, exitCode } = run(
-      ["tasks", "list", "--target", "#general"],
+      ["attachments", "upload", "--target", "#general", "--file", "/tmp/test.png"],
       { expectFail: true }
     );
     expect(exitCode).toBe(1);
@@ -181,6 +181,38 @@ describe("E2E smoke tests", () => {
     const parsed = JSON.parse(stdout);
     expect(parsed.ok).toBe(false);
     // Target parsing happens before auth, so error code is INVALID_ARGS
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+  });
+
+  it("shows tasks subcommand help", () => {
+    const { stdout, exitCode } = run(["tasks", "--help"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("list");
+    expect(stdout).toContain("create");
+    expect(stdout).toContain("claim");
+    expect(stdout).toContain("unclaim");
+    expect(stdout).toContain("update");
+  });
+
+  it("tasks list requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["tasks", "list", "--target", "#general"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("tasks update validates status", () => {
+    const { stdout, exitCode } = run(
+      ["tasks", "update", "--target", "#general", "--number", "1", "--status", "bogus"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
     expect(parsed.error.code).toBe("INVALID_ARGS");
   });
 });
