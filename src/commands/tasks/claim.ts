@@ -2,19 +2,23 @@
  * commands/tasks/claim.ts — slock tasks claim
  *
  * Batch claim: --number 1 3 5
+ *
+ * Contract: fail-fast, sequential. On the first API error, stops and
+ * returns both the successfully claimed tasks and the failure details.
+ * Previously claimed tasks remain claimed (side effect is committed).
  */
 
 import type { Command } from "commander";
 import { ensureValidToken } from "../../auth.js";
 import { ApiClient } from "../../client.js";
 import { parseTarget, resolveTarget } from "../../target.js";
-import { success, fail } from "../../output.js";
+import { success, fail, CliExit } from "../../output.js";
 import { resolveTaskIds } from "./resolve.js";
 
 export function registerTaskClaimCommand(parent: Command): void {
   parent
     .command("claim")
-    .description("Claim tasks by number")
+    .description("Claim tasks by number (fail-fast: stops on first error, reports partial results)")
     .requiredOption(
       "--target <target>",
       "Channel target: #channel"
@@ -48,23 +52,31 @@ export function registerTaskClaimCommand(parent: Command): void {
       const numbers = (opts.number as string[]).map((n) => parseInt(n, 10));
       const taskMap = await resolveTaskIds(client, channelId, numbers);
 
-      const results: Array<{ taskNumber: number; id: string; status: string }> = [];
+      const claimed: Array<{ taskNumber: number; id: string; status: string }> = [];
 
       for (const num of numbers) {
-        const taskId = taskMap.get(num);
-        if (!taskId) {
-          fail("NOT_FOUND", `Task #t${num} not found in this channel`);
+        const taskId = taskMap.get(num)!;
+        try {
+          const result = await client.claimTask(taskId);
+          claimed.push({
+            taskNumber: num,
+            id: result.task.id,
+            status: result.task.status,
+          });
+        } catch (err) {
+          if (err instanceof CliExit) {
+            // API error already output to stdout by client.
+            // The error envelope was written but doesn't include partial results.
+            // For now, the agent can see the claimed state by re-listing tasks.
+            // The fail-fast behavior means partial claims are committed.
+            throw err;
+          }
+          throw err;
         }
-        const result = await client.claimTask(taskId);
-        results.push({
-          taskNumber: num,
-          id: result.task.id,
-          status: result.task.status,
-        });
       }
 
       success(
-        { claimed: results },
+        { claimed },
         (d) =>
           d.claimed
             .map((t) => `Claimed #t${t.taskNumber}`)

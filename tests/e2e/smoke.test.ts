@@ -101,15 +101,16 @@ describe("E2E smoke tests", () => {
     expect(parsed.error.code).toBe("AUTH_FAILED");
   });
 
-  it("unimplemented commands return JSON error", () => {
+  it("attachments upload validates file existence", () => {
     const { stdout, exitCode } = run(
-      ["attachments", "upload", "--target", "#general", "--file", "/tmp/test.png"],
+      ["attachments", "upload", "--target", "#general", "--file", "/tmp/nonexistent-file-xyz.png"],
       { expectFail: true }
     );
     expect(exitCode).toBe(1);
     const parsed = JSON.parse(stdout);
     expect(parsed.ok).toBe(false);
-    expect(parsed.error.message).toContain("Not implemented");
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("File not found");
   });
 
   it("text format outputs to stderr on error", () => {
@@ -214,5 +215,35 @@ describe("E2E smoke tests", () => {
     const parsed = JSON.parse(stdout);
     expect(parsed.ok).toBe(false);
     expect(parsed.error.code).toBe("INVALID_ARGS");
+  });
+
+  it("attachments upload rejects unsupported file type", () => {
+    // Create a temp file with unsupported extension
+    const tmpFile = "/tmp/slock-cli-test-file.txt";
+    require("node:fs").writeFileSync(tmpFile, "test");
+    try {
+      const { stdout, exitCode } = run(
+        ["attachments", "upload", "--target", "#general", "--file", tmpFile],
+        { expectFail: true }
+      );
+      expect(exitCode).toBe(1);
+      const parsed = JSON.parse(stdout);
+      expect(parsed.ok).toBe(false);
+      expect(parsed.error.code).toBe("INVALID_ARGS");
+      expect(parsed.error.message).toContain("Unsupported file type");
+    } finally {
+      require("node:fs").unlinkSync(tmpFile);
+    }
+  });
+
+  it("attachments download requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["attachments", "download", "--id", "00000000-0000-0000-0000-000000000000"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
   });
 });

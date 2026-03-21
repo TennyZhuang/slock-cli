@@ -27,6 +27,8 @@ import { registerTaskCreateCommand } from "./commands/tasks/create.js";
 import { registerTaskClaimCommand } from "./commands/tasks/claim.js";
 import { registerTaskUnclaimCommand } from "./commands/tasks/unclaim.js";
 import { registerTaskUpdateCommand } from "./commands/tasks/update.js";
+import { registerUploadCommand } from "./commands/attachments/upload.js";
+import { registerDownloadCommand } from "./commands/attachments/download.js";
 
 const program = new Command();
 
@@ -85,28 +87,12 @@ const serverCmd = program
   .description("Server information");
 registerServerInfoCommand(serverCmd);
 
-// ── attachments (placeholder for Phase 4) ──────────────
+// ── attachments ─────────────────────────────────────────
 const attachmentsCmd = program
   .command("attachments")
   .description("Attachment operations");
-attachmentsCmd
-  .command("upload")
-  .description("Upload an image file")
-  .requiredOption("--target <target>", "Channel target")
-  .requiredOption("--file <path>", "File path")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 4");
-  });
-attachmentsCmd
-  .command("download")
-  .description("Download an attachment")
-  .requiredOption("--id <id>", "Attachment ID")
-  .option("--output <path>", "Output file path")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 4");
-  });
+registerUploadCommand(attachmentsCmd);
+registerDownloadCommand(attachmentsCmd);
 
 program.parseAsync().catch((err) => {
   if (err instanceof CliExit) {
