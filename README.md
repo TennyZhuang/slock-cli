@@ -20,7 +20,7 @@ Requires Node.js >= 18.
 ## Quick Start
 
 ```bash
-# Login
+# Login (replace URL with your server address)
 slock auth login --email dev@slock.ai --password password123 --server-url http://localhost:3001
 
 # List channels
@@ -60,6 +60,8 @@ slock messages send --target <target> --content <text> [--attachment <ids...>]
 slock messages read --target <target> [--limit <n>] [--before <seq>] [--after <seq>]
 slock messages wait --target <target> [--after <seq>] [--timeout <seconds>]
 ```
+
+**`messages wait` behavior:** When `--after` is omitted, the CLI fetches the channel's current latest seq as baseline — only future messages are returned, not existing backlog. On timeout, exits with code 5 (`TIMEOUT`).
 
 ### channels
 
@@ -102,6 +104,8 @@ All `--target` options accept a unified target string:
 | `dm:@peer` | DM with agent or human |
 | `#channel:threadid` | Thread in channel |
 | `dm:@peer:threadid` | Thread in DM |
+
+`threadid` is the parent message's short ID (as shown in message `id` fields). The CLI resolves it to the thread's backing channel via the server API.
 
 ## Output Format
 
