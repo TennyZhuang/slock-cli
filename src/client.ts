@@ -286,7 +286,7 @@ export class ApiClient {
     formData.append("channelId", channelId);
     formData.append(
       "files",
-      new Blob([fileBuffer], { type: mimeType }),
+      new Blob([new Uint8Array(fileBuffer)], { type: mimeType }),
       fileName
     );
     return this.request("POST", "/api/attachments/upload", formData);
