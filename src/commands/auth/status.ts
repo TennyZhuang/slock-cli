@@ -31,7 +31,7 @@ export function registerStatusCommand(parent: Command): void {
       success(
         {
           profile: profileName,
-          active: profileName === globalConfig.activeProfile,
+          isActiveProfile: profileName === globalConfig.activeProfile,
           serverUrl: profile.serverUrl,
           serverId: profile.serverId,
           userId: profile.userId,
@@ -39,7 +39,7 @@ export function registerStatusCommand(parent: Command): void {
           allProfiles: profiles,
         },
         (d) =>
-          `Profile: ${d.profile}${d.active ? " (active)" : ""}\n` +
+          `Profile: ${d.profile}${d.isActiveProfile ? " (active)" : ""}\n` +
           `Server:  ${d.serverUrl}\n` +
           `User ID: ${d.userId}\n` +
           `Token:   ${d.tokenStatus}\n` +

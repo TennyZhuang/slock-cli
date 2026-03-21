@@ -48,7 +48,7 @@ const messagesCmd = program
 messagesCmd
   .command("send")
   .description("Send a message")
-  .requiredOption("--target <target>", "Target: #channel, dm:@peer, #channel:threadid")
+  .requiredOption("--target <target>", "Target: #channel, dm:@peer, #channel:threadid, dm:@peer:threadid")
   .requiredOption("--content <text>", "Message content")
   .action(async () => {
     const { fail } = await import("./output.js");
@@ -57,7 +57,7 @@ messagesCmd
 messagesCmd
   .command("read")
   .description("Read messages from a channel or DM")
-  .requiredOption("--target <target>", "Target: #channel, dm:@peer")
+  .requiredOption("--target <target>", "Target: #channel, dm:@peer, #channel:threadid, dm:@peer:threadid")
   .option("--limit <n>", "Number of messages to read", "50")
   .option("--before <seq>", "Read messages before this sequence number")
   .option("--after <seq>", "Read messages after this sequence number")
@@ -68,7 +68,7 @@ messagesCmd
 messagesCmd
   .command("wait")
   .description("Wait for new messages (blocking)")
-  .requiredOption("--target <target>", "Target: #channel, dm:@peer")
+  .requiredOption("--target <target>", "Target: #channel, dm:@peer, #channel:threadid, dm:@peer:threadid")
   .option("--after <seq>", "Wait for messages after this sequence number")
   .option("--timeout <seconds>", "Timeout in seconds", "30")
   .action(async () => {
@@ -122,7 +122,7 @@ tasksCmd
   .command("create")
   .description("Create tasks")
   .requiredOption("--target <target>", "Channel target")
-  .requiredOption("--title <titles...>", "Task title(s)")
+  .requiredOption("--title <titles...>", "Task title(s) — variadic, e.g.: --title 'Fix bug' 'Add feature'")
   .action(async () => {
     const { fail } = await import("./output.js");
     fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 3");
@@ -131,7 +131,7 @@ tasksCmd
   .command("claim")
   .description("Claim tasks")
   .requiredOption("--target <target>", "Channel target")
-  .requiredOption("--number <numbers...>", "Task number(s)")
+  .requiredOption("--number <numbers...>", "Task number(s) — variadic, e.g.: --number 1 3 5")
   .action(async () => {
     const { fail } = await import("./output.js");
     fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 3");

@@ -126,6 +126,12 @@ export class ApiClient {
 
   // ── Messages ──────────────────────────────────────────
 
+  /**
+   * List messages for a channel.
+   *
+   * CLI enrichment: the command layer will compute latestSeq/oldestSeq
+   * from the messages array for incremental polling.
+   */
   async listMessages(
     channelId: string,
     opts?: { limit?: number; before?: number }
