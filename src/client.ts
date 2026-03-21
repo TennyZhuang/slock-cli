@@ -168,6 +168,7 @@ export class ApiClient {
       channelId: string;
       senderType: string;
       senderId: string;
+      senderName?: string;
       content: string;
       createdAt: string;
     }>

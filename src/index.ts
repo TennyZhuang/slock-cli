@@ -15,6 +15,13 @@ import { setOutputFormat, CliExit } from "./output.js";
 import { registerLoginCommand } from "./commands/auth/login.js";
 import { registerLogoutCommand } from "./commands/auth/logout.js";
 import { registerStatusCommand } from "./commands/auth/status.js";
+import { registerSendCommand } from "./commands/messages/send.js";
+import { registerReadCommand } from "./commands/messages/read.js";
+import { registerWaitCommand } from "./commands/messages/wait.js";
+import { registerChannelListCommand } from "./commands/channels/list.js";
+import { registerChannelJoinCommand } from "./commands/channels/join.js";
+import { registerChannelCreateCommand } from "./commands/channels/create.js";
+import { registerServerInfoCommand } from "./commands/server/info.js";
 
 const program = new Command();
 
@@ -41,69 +48,21 @@ registerLoginCommand(authCmd);
 registerLogoutCommand(authCmd);
 registerStatusCommand(authCmd);
 
-// ── messages (placeholder for Phase 2) ──────────────────
+// ── messages ────────────────────────────────────────────
 const messagesCmd = program
   .command("messages")
   .description("Message operations");
-messagesCmd
-  .command("send")
-  .description("Send a message")
-  .requiredOption("--target <target>", "Target: #channel, dm:@peer, #channel:threadid, dm:@peer:threadid")
-  .requiredOption("--content <text>", "Message content")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 2");
-  });
-messagesCmd
-  .command("read")
-  .description("Read messages from a channel or DM")
-  .requiredOption("--target <target>", "Target: #channel, dm:@peer, #channel:threadid, dm:@peer:threadid")
-  .option("--limit <n>", "Number of messages to read", "50")
-  .option("--before <seq>", "Read messages before this sequence number")
-  .option("--after <seq>", "Read messages after this sequence number")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 2");
-  });
-messagesCmd
-  .command("wait")
-  .description("Wait for new messages (blocking)")
-  .requiredOption("--target <target>", "Target: #channel, dm:@peer, #channel:threadid, dm:@peer:threadid")
-  .option("--after <seq>", "Wait for messages after this sequence number")
-  .option("--timeout <seconds>", "Timeout in seconds", "30")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 2");
-  });
+registerSendCommand(messagesCmd);
+registerReadCommand(messagesCmd);
+registerWaitCommand(messagesCmd);
 
-// ── channels (placeholder for Phase 2) ─────────────────
+// ── channels ────────────────────────────────────────────
 const channelsCmd = program
   .command("channels")
   .description("Channel operations");
-channelsCmd
-  .command("list")
-  .description("List all channels")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 2");
-  });
-channelsCmd
-  .command("join")
-  .description("Join a channel")
-  .requiredOption("--name <name>", "Channel name")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 2");
-  });
-channelsCmd
-  .command("create")
-  .description("Create a channel")
-  .requiredOption("--name <name>", "Channel name")
-  .option("--description <desc>", "Channel description")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 2");
-  });
+registerChannelListCommand(channelsCmd);
+registerChannelJoinCommand(channelsCmd);
+registerChannelCreateCommand(channelsCmd);
 
 // ── tasks (placeholder for Phase 3) ────────────────────
 const tasksCmd = program
@@ -156,17 +115,11 @@ tasksCmd
     fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 3");
   });
 
-// ── server (placeholder for Phase 2) ───────────────────
+// ── server ──────────────────────────────────────────────
 const serverCmd = program
   .command("server")
   .description("Server information");
-serverCmd
-  .command("info")
-  .description("Show server info (channels, agents, humans)")
-  .action(async () => {
-    const { fail } = await import("./output.js");
-    fail("GENERAL_ERROR", "Not implemented yet — coming in Phase 2");
-  });
+registerServerInfoCommand(serverCmd);
 
 // ── attachments (placeholder for Phase 4) ──────────────
 const attachmentsCmd = program

@@ -90,9 +90,20 @@ describe("E2E smoke tests", () => {
     expect(parsed.ok).toBe(false);
   });
 
-  it("unimplemented commands return JSON error", () => {
+  it("implemented commands require auth when not logged in", () => {
     const { stdout, exitCode } = run(
       ["messages", "send", "--target", "#general", "--content", "hi"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4); // AUTH_FAILED
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("unimplemented commands return JSON error", () => {
+    const { stdout, exitCode } = run(
+      ["tasks", "list", "--target", "#general"],
       { expectFail: true }
     );
     expect(exitCode).toBe(1);
@@ -108,5 +119,68 @@ describe("E2E smoke tests", () => {
     );
     expect(exitCode).toBe(4);
     expect(stderr).toContain("Error:");
+  });
+
+  // ── Phase 2 command smoke tests ─────────────────────
+
+  it("shows messages subcommand help", () => {
+    const { stdout, exitCode } = run(["messages", "--help"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("send");
+    expect(stdout).toContain("read");
+    expect(stdout).toContain("wait");
+  });
+
+  it("shows channels subcommand help", () => {
+    const { stdout, exitCode } = run(["channels", "--help"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("list");
+    expect(stdout).toContain("join");
+    expect(stdout).toContain("create");
+  });
+
+  it("messages read requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["messages", "read", "--target", "#general"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("channels list requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["channels", "list"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("server info requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["server", "info"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("messages send rejects invalid target", () => {
+    const { stdout, exitCode } = run(
+      ["messages", "send", "--target", "invalid", "--content", "hi"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBeGreaterThan(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    // Target parsing happens before auth, so error code is INVALID_ARGS
+    expect(parsed.error.code).toBe("INVALID_ARGS");
   });
 });
