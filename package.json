@@ -27,6 +27,7 @@
     "url": "https://github.com/TennyZhuang/slock-cli/issues"
   },
   "homepage": "https://github.com/TennyZhuang/slock-cli#readme",
+  "packageManager": "pnpm@10.27.0",
   "dependencies": {
     "commander": "^14.0.3"
   },

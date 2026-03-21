@@ -14,7 +14,6 @@ pnpm install
 pnpm build          # Build the project
 pnpm dev            # Build in watch mode
 pnpm test           # Run tests
-pnpm lint           # Lint source code
 pnpm typecheck      # Type check without emitting
 ```
 
@@ -37,7 +36,7 @@ tests/
 
 1. Create a feature branch from `main`
 2. Keep changes focused — one feature or fix per PR
-3. Ensure `pnpm lint`, `pnpm typecheck`, and `pnpm test` all pass
+3. Ensure `pnpm typecheck` and `pnpm test` both pass
 4. Write tests for new commands or utilities
 5. Update README or skill docs if behavior changes
 
