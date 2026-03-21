@@ -17,7 +17,7 @@ pnpm link --global
 # npm link
 ```
 
-Requires Node.js >= 18.
+Requires Node.js >= 22.
 
 ## Quick Start
 
@@ -187,6 +187,10 @@ Priority chain: CLI flags > environment variables > active profile > defaults.
 - Access tokens expire after 15 minutes
 - The CLI automatically refreshes using the stored refresh token
 - If refresh fails, you'll get `AUTH_FAILED` (exit code 4) — run `slock auth login` again
+
+## Issues
+
+Bug reports and feature requests are welcome via [GitHub Issues](https://github.com/TennyZhuang/slock-cli/issues). Pull requests are not accepted at this time.
 
 ## Development
 
