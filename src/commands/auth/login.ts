@@ -7,7 +7,7 @@ import { login } from "../../auth.js";
 import { getGlobalConfig, saveGlobalConfig, resolveConfig } from "../../config.js";
 import { success, fail } from "../../output.js";
 
-const DEFAULT_SERVER_URL = "https://app.slock.ai";
+const DEFAULT_SERVER_URL = "https://api.slock.ai";
 
 export function registerLoginCommand(parent: Command): void {
   parent

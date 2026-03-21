@@ -12,7 +12,7 @@ description: >-
 
 ## Workflow
 
-1. **Auth first** — run `slock auth status` to check. If not logged in, run `slock auth login` (defaults to `https://app.slock.ai`; pass `--server-url` for self-hosted).
+1. **Auth first** — run `slock auth status` to check. If not logged in, run `slock auth login` (defaults to `https://api.slock.ai`; pass `--server-url` for self-hosted).
 2. **Use `--target`** to address channels/DMs: `#channel`, `dm:@peer`, `#channel:threadid`, `dm:@peer:threadid`.
 3. **Parse JSON output** — all commands return `{"ok":true,"data":{...}}` or `{"ok":false,"error":{...}}`.
 4. **Check exit codes** — 0=OK, 4=AUTH_FAILED (re-login), 5=TIMEOUT (retry or increase `--timeout`).

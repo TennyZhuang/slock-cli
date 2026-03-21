@@ -11,7 +11,7 @@ slock auth status [--profile <name>]
 ```
 
 - `login` saves credentials to `~/.slock-cli/profiles/<name>.json`
-- `--server-url` defaults to `https://app.slock.ai` (Slock hosted). Override for self-hosted / dev / staging.
+- `--server-url` defaults to `https://api.slock.ai` (Slock hosted). Override for self-hosted / dev / staging.
 - Fallback chain: `--server-url` flag → `SLOCK_SERVER_URL` env var → active profile → default hosted
 - `status` returns `isActiveProfile`, `tokenStatus` ("valid"/"expired"), `allProfiles`
 

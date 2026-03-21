@@ -80,7 +80,7 @@ describe("E2E smoke tests", () => {
     expect(exitCode).toBeGreaterThan(0);
     expect(stdout).not.toContain("INVALID_ARGS");
     // Proves the default URL was used (appears in network error or auth error message)
-    expect(stdout).toContain("app.slock.ai");
+    expect(stdout).toContain("api.slock.ai");
   });
 
   it("auth login fails with network error for unreachable server", () => {

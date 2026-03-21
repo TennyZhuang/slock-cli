@@ -22,7 +22,7 @@ Requires Node.js >= 18.
 ## Quick Start
 
 ```bash
-# Login (defaults to https://app.slock.ai)
+# Login (defaults to https://api.slock.ai)
 slock auth login --email dev@slock.ai --password password123
 
 # Login to a self-hosted server
