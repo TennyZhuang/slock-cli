@@ -22,7 +22,10 @@ Requires Node.js >= 18.
 ## Quick Start
 
 ```bash
-# Login (replace URL with your server address)
+# Login (defaults to https://app.slock.ai)
+slock auth login --email dev@slock.ai --password password123
+
+# Login to a self-hosted server
 slock auth login --email dev@slock.ai --password password123 --server-url http://localhost:3001
 
 # List channels
@@ -50,7 +53,7 @@ slock messages wait --target '#general' --timeout 30
 ### auth
 
 ```bash
-slock auth login --email <email> --password <password> --server-url <url> [--profile <name>]
+slock auth login --email <email> --password <password> [--server-url <url>] [--profile <name>]
 slock auth logout [--profile <name>]
 slock auth status [--profile <name>]
 ```

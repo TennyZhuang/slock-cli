@@ -4,8 +4,10 @@
 
 import type { Command } from "commander";
 import { login } from "../../auth.js";
-import { getGlobalConfig, saveGlobalConfig } from "../../config.js";
+import { getGlobalConfig, saveGlobalConfig, resolveConfig } from "../../config.js";
 import { success, fail } from "../../output.js";
+
+const DEFAULT_SERVER_URL = "https://app.slock.ai";
 
 export function registerLoginCommand(parent: Command): void {
   parent
@@ -13,16 +15,22 @@ export function registerLoginCommand(parent: Command): void {
     .description("Login to a Slock server")
     .requiredOption("--email <email>", "Account email")
     .requiredOption("--password <password>", "Account password")
-    .requiredOption("--server-url <url>", "Slock server URL")
+    .option("--server-url <url>", `Slock server URL (default: ${DEFAULT_SERVER_URL})`)
     .option("--profile <name>", "Profile name to save credentials to")
     .action(async (opts) => {
       const profileName =
         opts.profile ?? getGlobalConfig().activeProfile;
 
+      // Resolve server URL: CLI flag → env var → active profile → default hosted
+      const serverUrl =
+        opts.serverUrl ??
+        resolveConfig({ profile: profileName }).serverUrl ??
+        DEFAULT_SERVER_URL;
+
       let result;
       try {
         result = await login(
-          opts.serverUrl,
+          serverUrl,
           opts.email,
           opts.password,
           profileName
@@ -32,7 +40,7 @@ export function registerLoginCommand(parent: Command): void {
         const msg = err instanceof Error ? err.message : String(err);
         fail(
           "NETWORK_ERROR",
-          `Cannot connect to ${opts.serverUrl}: ${msg}`
+          `Cannot connect to ${serverUrl}: ${msg}`
         );
       }
 

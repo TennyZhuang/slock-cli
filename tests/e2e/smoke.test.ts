@@ -71,6 +71,18 @@ describe("E2E smoke tests", () => {
     expect(parsed.error.code).toBe("AUTH_FAILED");
   });
 
+  it("auth login without --server-url defaults to hosted server", () => {
+    const { stdout, exitCode } = run(
+      ["auth", "login", "--email", "test@test.com", "--password", "test"],
+      { expectFail: true }
+    );
+    // Should attempt connection to default hosted server, not fail with INVALID_ARGS
+    expect(exitCode).toBeGreaterThan(0);
+    expect(stdout).not.toContain("INVALID_ARGS");
+    // Proves the default URL was used (appears in network error or auth error message)
+    expect(stdout).toContain("app.slock.ai");
+  });
+
   it("auth login fails with network error for unreachable server", () => {
     const { stdout, exitCode } = run(
       [

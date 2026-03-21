@@ -5,12 +5,14 @@ All commands output JSON by default. Add `--format text` for human-readable outp
 ## auth
 
 ```bash
-slock auth login --email <email> --password <password> --server-url <url> [--profile <name>]
+slock auth login --email <email> --password <password> [--server-url <url>] [--profile <name>]
 slock auth logout [--profile <name>]
 slock auth status [--profile <name>]
 ```
 
 - `login` saves credentials to `~/.slock-cli/profiles/<name>.json`
+- `--server-url` defaults to `https://app.slock.ai` (Slock hosted). Override for self-hosted / dev / staging.
+- Fallback chain: `--server-url` flag → `SLOCK_SERVER_URL` env var → active profile → default hosted
 - `status` returns `isActiveProfile`, `tokenStatus` ("valid"/"expired"), `allProfiles`
 
 ## messages
