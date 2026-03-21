@@ -17,7 +17,7 @@ pnpm link --global
 # npm link
 ```
 
-Requires Node.js >= 22.
+Requires Node.js >= 18.
 
 ## Quick Start
 

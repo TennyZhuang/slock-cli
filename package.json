@@ -11,11 +11,10 @@
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint src/",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=18"
   },
   "license": "MIT",
   "repository": {
