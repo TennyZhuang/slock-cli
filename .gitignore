@@ -3,3 +3,5 @@ dist/
 *.tsbuildinfo
 .env
 .slock-cli/
+.claude/*
+!.claude/skills/
