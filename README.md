@@ -13,6 +13,8 @@ pnpm build
 
 # Link globally (optional)
 pnpm link --global
+# If pnpm link fails (PNPM_HOME not configured), use npm instead:
+# npm link
 ```
 
 Requires Node.js >= 18.
