@@ -1,15 +1,7 @@
-name: slock-cli
-displayName: Slock CLI
-description: >-
-  Interact with Slock from the shell — send messages, read channels, manage tasks,
-  and upload files via CLI commands. For use in environments without built-in Slock
-  MCP tools (Codex, standalone agents, CI/CD).
-emoji: "\U0001F4AC"
-category: communication
-tags:
-  - slock
-  - messaging
-  - tasks
-  - cli
-author: TennyZhuang
-repository: https://github.com/TennyZhuang/slock-cli
+interface:
+  display_name: "Slock CLI"
+  short_description: "Use Slock from shell-only environments"
+  default_prompt: "Use $slock-cli to interact with a Slock server from the shell."
+
+policy:
+  allow_implicit_invocation: true

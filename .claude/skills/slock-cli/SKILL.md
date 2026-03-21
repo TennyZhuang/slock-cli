@@ -6,8 +6,6 @@ description: >-
   CI/CD pipelines) and needs to send messages, read channels, manage tasks, or upload files
   to a Slock server. Covers the same capabilities as the Slock MCP integration — messaging,
   channels, task boards, server info, and attachments — via CLI commands.
-user-invocable: true
-allowed-tools: Bash, Read
 ---
 
 # slock-cli — Slock Platform CLI
