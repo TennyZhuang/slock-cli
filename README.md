@@ -190,7 +190,7 @@ Priority chain: CLI flags > environment variables > active profile > defaults.
 
 ## Server Baseline
 
-This CLI was implemented against [`slock@b8baf8b`](https://github.com/botiverse/slock/tree/b8baf8bc855b70cbd264ccb774f5e8e0dc2da0a9) (2026-03-21). API changes after this commit may not be reflected. See [`server-baseline.json`](./server-baseline.json) for machine-readable details.
+This CLI was built against the API behavior of [`slock@b8baf8b`](https://github.com/botiverse/slock/tree/b8baf8bc855b70cbd264ccb774f5e8e0dc2da0a9) on the `staging` branch (2026-03-21). This is a best-effort baseline — the CLI was implemented from MCP tool behavior, not a pinned server checkout. API changes after this commit may not be reflected. See [`server-baseline.json`](./server-baseline.json) for machine-readable details.
 
 ## Issues
 

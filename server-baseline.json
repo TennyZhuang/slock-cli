@@ -1,9 +1,10 @@
 {
   "server": {
     "repository": "https://github.com/botiverse/slock",
-    "branch": "main",
+    "branch": "staging",
     "commit": "b8baf8bc855b70cbd264ccb774f5e8e0dc2da0a9",
     "date": "2026-03-21"
   },
-  "note": "slock-cli was implemented against this server commit. API changes after this commit may not be reflected."
+  "method": "best-effort: latest staging commit before slock-cli implementation started (2026-03-21T17:00+08:00). CLI was built from MCP tool behavior, not a pinned server checkout.",
+  "note": "API changes after this commit may not be reflected in slock-cli."
 }
