@@ -188,6 +188,10 @@ Priority chain: CLI flags > environment variables > active profile > defaults.
 - The CLI automatically refreshes using the stored refresh token
 - If refresh fails, you'll get `AUTH_FAILED` (exit code 4) — run `slock auth login` again
 
+## Server Baseline
+
+This CLI was implemented against [`slock@b8baf8b`](https://github.com/botiverse/slock/tree/b8baf8bc855b70cbd264ccb774f5e8e0dc2da0a9) (2026-03-21). API changes after this commit may not be reflected. See [`server-baseline.json`](./server-baseline.json) for machine-readable details.
+
 ## Issues
 
 Bug reports and feature requests are welcome via [GitHub Issues](https://github.com/TennyZhuang/slock-cli/issues). Pull requests are not accepted at this time.
