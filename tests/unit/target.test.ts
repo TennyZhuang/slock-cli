@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { parseTarget } from "../../src/target.js";
+import { formatPermalink, parseTarget } from "../../src/target.js";
 
 describe("parseTarget", () => {
   // ── Channel targets ─────────────────────────────────
@@ -58,6 +58,45 @@ describe("parseTarget", () => {
       type: "dm",
       peer: "MrCroxx",
     });
+  });
+
+  // ── Permalink targets ───────────────────────────────
+  it("parses a relative message permalink", () => {
+    expect(
+      parseTarget(
+        "/s/botiverse/channel/30574717-8c95-4640-a619-511a4e68319b?msg=facbc8c6-8663-4bdb-acee-213f61fefb3c"
+      )
+    ).toEqual({
+      type: "permalink",
+      serverSlug: "botiverse",
+      channelId: "30574717-8c95-4640-a619-511a4e68319b",
+      messageId: "facbc8c6-8663-4bdb-acee-213f61fefb3c",
+    });
+  });
+
+  it("parses an absolute message permalink", () => {
+    expect(
+      parseTarget(
+        "https://app.slock.ai/s/botiverse/channel/30574717-8c95-4640-a619-511a4e68319b?msg=facbc8c6-8663-4bdb-acee-213f61fefb3c"
+      )
+    ).toEqual({
+      type: "permalink",
+      serverSlug: "botiverse",
+      channelId: "30574717-8c95-4640-a619-511a4e68319b",
+      messageId: "facbc8c6-8663-4bdb-acee-213f61fefb3c",
+    });
+  });
+
+  it("formats a relative message permalink", () => {
+    expect(
+      formatPermalink({
+        serverSlug: "botiverse",
+        channelId: "30574717-8c95-4640-a619-511a4e68319b",
+        messageId: "facbc8c6-8663-4bdb-acee-213f61fefb3c",
+      })
+    ).toBe(
+      "/s/botiverse/channel/30574717-8c95-4640-a619-511a4e68319b?msg=facbc8c6-8663-4bdb-acee-213f61fefb3c"
+    );
   });
 
   // ── Error cases ─────────────────────────────────────

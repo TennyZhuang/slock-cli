@@ -17,7 +17,50 @@ import type { ApiClient } from "./client.js";
 
 export type Target =
   | { type: "channel"; name: string; threadId?: string }
-  | { type: "dm"; peer: string; threadId?: string };
+  | { type: "dm"; peer: string; threadId?: string }
+  | {
+      type: "permalink";
+      serverSlug: string;
+      channelId: string;
+      messageId?: string;
+    };
+
+export interface PermalinkRef {
+  serverSlug: string;
+  channelId: string;
+  messageId: string;
+}
+
+function parsePermalink(raw: string): Target | null {
+  let url: URL;
+  try {
+    url = raw.startsWith("/s/")
+      ? new URL(raw, "https://slock.invalid")
+      : new URL(raw);
+  } catch {
+    return null;
+  }
+
+  const match = url.pathname.match(/^\/s\/([^/]+)\/channel\/([^/]+)$/);
+  if (!match) {
+    return null;
+  }
+
+  const [, serverSlug, channelId] = match;
+  const messageId = url.searchParams.get("msg") ?? undefined;
+
+  return {
+    type: "permalink",
+    serverSlug,
+    channelId,
+    messageId,
+  };
+}
+
+export function formatPermalink(ref: PermalinkRef): string {
+  const params = new URLSearchParams({ msg: ref.messageId });
+  return `/s/${ref.serverSlug}/channel/${ref.channelId}?${params.toString()}`;
+}
 
 /**
  * Parse a target string into a structured Target.
@@ -26,6 +69,11 @@ export type Target =
  * @throws Error if the target string is malformed.
  */
 export function parseTarget(raw: string): Target {
+  const permalink = parsePermalink(raw);
+  if (permalink) {
+    return permalink;
+  }
+
   if (raw.startsWith("#")) {
     const body = raw.slice(1);
     if (!body) {
@@ -80,6 +128,10 @@ export async function resolveTarget(
   client: ApiClient,
   target: Target
 ): Promise<string> {
+  if (target.type === "permalink") {
+    return target.channelId;
+  }
+
   if (target.type === "channel") {
     // Look up channel by name
     const channels = await client.listChannels();

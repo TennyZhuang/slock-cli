@@ -142,6 +142,7 @@ describe("E2E smoke tests", () => {
     expect(stdout).toContain("send");
     expect(stdout).toContain("read");
     expect(stdout).toContain("wait");
+    expect(stdout).toContain("permalink");
   });
 
   it("shows channels subcommand help", () => {

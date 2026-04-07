@@ -3,7 +3,7 @@
  *
  * Wires together all commands under a resource-based structure:
  *   slock auth login/logout/status
- *   slock messages send/read/wait
+ *   slock messages send/read/wait/permalink
  *   slock channels list/join/create
  *   slock tasks list/create/claim/unclaim/update
  *   slock server info
@@ -18,6 +18,7 @@ import { registerStatusCommand } from "./commands/auth/status.js";
 import { registerSendCommand } from "./commands/messages/send.js";
 import { registerReadCommand } from "./commands/messages/read.js";
 import { registerWaitCommand } from "./commands/messages/wait.js";
+import { registerPermalinkCommand } from "./commands/messages/permalink.js";
 import { registerChannelListCommand } from "./commands/channels/list.js";
 import { registerChannelJoinCommand } from "./commands/channels/join.js";
 import { registerChannelCreateCommand } from "./commands/channels/create.js";
@@ -62,6 +63,7 @@ const messagesCmd = program
 registerSendCommand(messagesCmd);
 registerReadCommand(messagesCmd);
 registerWaitCommand(messagesCmd);
+registerPermalinkCommand(messagesCmd);
 
 // ── channels ────────────────────────────────────────────
 const channelsCmd = program
