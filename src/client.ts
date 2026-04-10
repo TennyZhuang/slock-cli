@@ -294,7 +294,11 @@ export class ApiClient {
       status: string;
       lastHeartbeat: string | null;
       daemonVersion?: string | null;
-      capabilities?: unknown;
+      // Server returns `runtimes: string[]` from buildMachineReadModel
+      // (services/machineReadModel.ts). The field is unused by the
+      // current `machines list` command but is the accurate shape, so
+      // future consumers get correct types out of the box.
+      runtimes?: string[];
     }>;
     latestDaemonVersion: string | null;
   }> {

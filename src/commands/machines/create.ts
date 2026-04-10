@@ -63,12 +63,25 @@ export function registerMachineCreateCommand(parent: Command): void {
       if (opts.saveTo) {
         const target = path.resolve(opts.saveTo);
         try {
+          // The `mode` option on writeFileSync only applies when the file
+          // is created. If `target` already exists with looser perms (very
+          // common when re-running this command), the contents are
+          // overwritten but the perms stay. chmod after write is the only
+          // reliable way to guarantee 0600 in both cases.
           fs.writeFileSync(target, result.apiKey, { mode: 0o600 });
+          fs.chmodSync(target, 0o600);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
+          // Server already created the machine — the apiKey is gone forever
+          // if we lose it here. Print it to stderr in a structured form
+          // BEFORE calling fail(), so automation can recover it regardless
+          // of --format. fail() in JSON mode emits {ok:false,error:...} on
+          // stdout with no apiKey field, and in text mode emits to stderr —
+          // neither is reliable for the caller to extract the key from.
+          process.stderr.write(`RECOVERY_API_KEY=${result.apiKey}\n`);
           fail(
             "GENERAL_ERROR",
-            `Machine was created (id=${result.machine.id}) but writing API key to ${target} failed: ${msg}. The key is in the JSON response below — capture it now or rotate it.`
+            `Machine was created (id=${result.machine.id}) but writing API key to ${target} failed: ${msg}. The key was printed to stderr as RECOVERY_API_KEY=<value> — capture it now or rotate it.`
           );
         }
       }

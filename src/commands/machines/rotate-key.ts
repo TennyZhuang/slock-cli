@@ -53,12 +53,21 @@ export function registerMachineRotateKeyCommand(parent: Command): void {
       if (opts.saveTo) {
         const target = path.resolve(opts.saveTo);
         try {
+          // The `mode` option on writeFileSync only applies when the file
+          // is created. Re-running rotate-key against an existing file
+          // would silently leave whatever permissions were there. chmod
+          // after write is the only reliable way to guarantee 0600.
           fs.writeFileSync(target, result.apiKey, { mode: 0o600 });
+          fs.chmodSync(target, 0o600);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
+          // Server already rotated the key — the previous key is dead and
+          // the new key is gone forever if we lose it here. Print to stderr
+          // BEFORE fail() so automation can recover regardless of --format.
+          process.stderr.write(`RECOVERY_API_KEY=${result.apiKey}\n`);
           fail(
             "GENERAL_ERROR",
-            `Key was rotated for machine ${machineId} but writing to ${target} failed: ${msg}. The new key is in the JSON response below — capture it now or rotate again.`
+            `Key was rotated for machine ${machineId} but writing to ${target} failed: ${msg}. The new key was printed to stderr as RECOVERY_API_KEY=<value> — capture it now or rotate again.`
           );
         }
       }
