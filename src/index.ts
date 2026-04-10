@@ -20,6 +20,11 @@ import { registerWhoamiCommand } from "./commands/auth/whoami.js";
 import { registerSendCommand } from "./commands/messages/send.js";
 import { registerReadCommand } from "./commands/messages/read.js";
 import { registerWaitCommand } from "./commands/messages/wait.js";
+import { registerGetCommand } from "./commands/messages/get.js";
+import {
+  registerSearchCommand,
+  runSearch,
+} from "./commands/messages/search.js";
 import { registerChannelListCommand } from "./commands/channels/list.js";
 import { registerChannelJoinCommand } from "./commands/channels/join.js";
 import { registerChannelCreateCommand } from "./commands/channels/create.js";
@@ -77,6 +82,27 @@ const messagesCmd = program
 registerSendCommand(messagesCmd);
 registerReadCommand(messagesCmd);
 registerWaitCommand(messagesCmd);
+registerGetCommand(messagesCmd);
+registerSearchCommand(messagesCmd);
+
+// ── search (top-level alias of `messages search`) ───────
+// Positional query for ergonomics: `slock search "needle"`.
+// All other flags pass through identically to `messages search`.
+program
+  .command("search <query>")
+  .description("Search messages (alias of `messages search`)")
+  .option(
+    "--target <target>",
+    "Scope to one channel/DM/thread: #channel, dm:@peer, #channel:threadid, dm:@peer:threadid"
+  )
+  .option("--sender <senderId>", "Filter by sender id (user or agent UUID)")
+  .option("--after <iso8601>", "Only messages on/after this timestamp")
+  .option("--before <iso8601>", "Only messages on/before this timestamp")
+  .option("--limit <n>", "Page size (server max 50, default 20)")
+  .option("--offset <n>", "Pagination offset", "0")
+  .action(async (query: string, opts) => {
+    await runSearch({ ...opts, query });
+  });
 
 // ── channels ────────────────────────────────────────────
 const channelsCmd = program

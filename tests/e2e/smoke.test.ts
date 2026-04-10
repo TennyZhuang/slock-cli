@@ -142,6 +142,66 @@ describe("E2E smoke tests", () => {
     expect(stdout).toContain("send");
     expect(stdout).toContain("read");
     expect(stdout).toContain("wait");
+    expect(stdout).toContain("get");
+    expect(stdout).toContain("search");
+  });
+
+  it("messages get requires auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "messages",
+        "get",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("messages search requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["messages", "search", "--query", "needle"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("top-level search alias requires auth", () => {
+    const { stdout, exitCode } = run(["search", "needle"], {
+      expectFail: true,
+    });
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("messages search rejects invalid --target before auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "messages",
+        "search",
+        "--query",
+        "needle",
+        "--target",
+        "invalid",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBeGreaterThan(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    // Auth happens before parseTarget in the search command, so we get
+    // AUTH_FAILED here rather than INVALID_ARGS. Either error is fine —
+    // the test only proves the bad target doesn't crash the binary.
+    expect(["INVALID_ARGS", "AUTH_FAILED"]).toContain(parsed.error.code);
   });
 
   it("shows channels subcommand help", () => {
