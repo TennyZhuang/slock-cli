@@ -1,6 +1,6 @@
 # slock-cli
 
-CLI client for the [Slock](https://github.com/botiverse/slock) platform, designed for agent consumption.
+CLI client for the [Slock](https://github.com/botiverse/slock) collaboration platform. Built for both interactive human use and non-interactive automation (scripts, CI, AI agents) — every command supports a stable JSON envelope so it composes cleanly into pipelines.
 
 ## Install
 
@@ -56,7 +56,10 @@ slock messages wait --target '#general' --timeout 30
 slock auth login --email <email> --password <password> [--server-url <url>] [--profile <name>]
 slock auth logout [--profile <name>]
 slock auth status [--profile <name>]
+slock auth whoami
 ```
+
+`auth status` is local-only (inspects the stored profile). `auth whoami` makes a live `GET /api/auth/me` call against the server, which is the right command to check whether the stored token is actually accepted by the server.
 
 ### messages
 
@@ -91,6 +94,31 @@ slock tasks update --target <target> --number <n> --status <status>
 ```bash
 slock server info
 ```
+
+### machines
+
+```bash
+slock machines list
+slock machines create --name <name> [--output json|env|shell] [--save-to <path>]
+slock machines rotate-key (--id <machineId> | --name <name>) [--output json|env|shell] [--save-to <path>]
+slock machines rename    (--id <machineId> | --name <name>) --new-name <newName>
+slock machines delete    (--id <machineId> | --name <name>)
+```
+
+**One-time API key handling.** `machines create` and `machines rotate-key` are the **only** time the server returns the plaintext machine API key — it cannot be retrieved later. The CLI gives you three ways to capture it:
+
+| Mode | Use case |
+|------|----------|
+| Default JSON envelope | The `apiKey` field is in the JSON output. Pipe to `jq -r .data.apiKey`. |
+| `--output env` (with `--format text`) | Single line `SLOCK_MACHINE_API_KEY=sk_machine_...`, ready for `>> .env` |
+| `--output shell` (with `--format text`) | `export SLOCK_MACHINE_API_KEY=sk_machine_...`, ready for `eval "$(...)"` |
+| `--save-to <path>` | Writes the key alone (no newline, no envelope) to a file with mode `0600`. Combine with any `--output` mode. |
+
+If `--save-to` write fails after the server has already created the machine, the CLI exits non-zero with the new key in the error message — you must capture it from there or rotate immediately, because the server will not return it again.
+
+`machines delete` returns a `GENERAL_ERROR` (HTTP 409 from the server) if any agents are still assigned to the machine. Reassign those agents first.
+
+`machines rename` and `machines delete` accept either `--id <uuid>` for an exact match or `--name <name>` for a lookup against `machines list`. If multiple machines share a name, the lookup fails with a disambiguation hint and you must pass `--id`.
 
 ### attachments
 
@@ -190,11 +218,11 @@ Priority chain: CLI flags > environment variables > active profile > defaults.
 
 ## Server Baseline
 
-This CLI was built against the API behavior of [`slock@b8baf8b`](https://github.com/botiverse/slock/tree/b8baf8bc855b70cbd264ccb774f5e8e0dc2da0a9) on the `staging` branch (2026-03-21). This is a best-effort baseline — the CLI was implemented from MCP tool behavior, not a pinned server checkout. API changes after this commit may not be reflected. See [`server-baseline.json`](./server-baseline.json) for machine-readable details.
+This CLI is verified against the API behavior of [`slock@19b4c52`](https://github.com/botiverse/slock/tree/staging) on the `staging` branch (2026-04-11). At this baseline every existing CLI subcommand was smoke-tested end-to-end against a slockdev local server, and the new `machines` + `auth whoami` commands map 1:1 to verified server endpoints. API changes after this commit may not be reflected. See [`server-baseline.json`](./server-baseline.json) for machine-readable details.
 
 ## Issues
 
-Bug reports and feature requests are welcome via [GitHub Issues](https://github.com/TennyZhuang/slock-cli/issues). Pull requests are not accepted at this time.
+Bug reports and feature requests are welcome via [GitHub Issues](https://github.com/TennyZhuang/slock-cli/issues). Pull requests from slockdev maintainers are welcome; external PRs may need design discussion in an issue first.
 
 ## Development
 

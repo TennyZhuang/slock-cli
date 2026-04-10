@@ -4,7 +4,12 @@
 
 import type { Command } from "commander";
 import { login } from "../../auth.js";
-import { getGlobalConfig, saveGlobalConfig, resolveConfig } from "../../config.js";
+import {
+  getGlobalConfig,
+  saveGlobalConfig,
+  resolveConfig,
+  getActiveProfileOverride,
+} from "../../config.js";
 import { success, fail } from "../../output.js";
 
 const DEFAULT_SERVER_URL = "https://api.slock.ai";
@@ -19,7 +24,9 @@ export function registerLoginCommand(parent: Command): void {
     .option("--profile <name>", "Profile name to save credentials to")
     .action(async (opts) => {
       const profileName =
-        opts.profile ?? getGlobalConfig().activeProfile;
+        opts.profile ??
+        getActiveProfileOverride() ??
+        getGlobalConfig().activeProfile;
 
       // Resolve server URL: CLI flag → env var → active profile → default hosted
       const serverUrl =

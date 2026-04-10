@@ -43,7 +43,7 @@ describe("E2E smoke tests", () => {
   it("shows help", () => {
     const { stdout, exitCode } = run(["--help"]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("CLI client for Slock platform");
+    expect(stdout).toContain("CLI client for the Slock collaboration platform");
     expect(stdout).toContain("auth");
     expect(stdout).toContain("messages");
     expect(stdout).toContain("tasks");
