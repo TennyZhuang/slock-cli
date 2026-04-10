@@ -244,6 +244,46 @@ export class ApiClient {
     return this.request("PATCH", `/api/tasks/${taskId}/status`, { status });
   }
 
+  /**
+   * Delete a task. Server requires either the task creator or a server
+   * admin/owner; otherwise returns 403. Returns `{ok: true}` on success.
+   * The task UUID can be obtained from `listTasks` (it's the message id
+   * of the task-typed message), or via the `resolveTaskIds` helper that
+   * existing commands use to map task numbers → UUIDs.
+   */
+  async deleteTask(taskId: string): Promise<{ ok: true }> {
+    return this.request("DELETE", `/api/tasks/${taskId}`);
+  }
+
+  /**
+   * Promote an existing message to a task. The server resolves the
+   * message's channel internally; thread messages are rejected with 409.
+   * Returns the enriched task row (with `taskNumber`, `title`, `status`,
+   * `createdByName`, etc.) so callers can render it without a follow-up
+   * `listTasks` call.
+   */
+  async convertMessageToTask(messageId: string): Promise<{
+    task: {
+      id: string;
+      taskNumber: number;
+      title: string;
+      description: string | null;
+      status: string;
+      channelId: string;
+      messageId: string;
+      createdByType: string;
+      createdById: string;
+      createdByName: string;
+      claimedByType: string | null;
+      claimedById: string | null;
+      claimedByName: string | null;
+      claimedAt: string | null;
+      completedAt: string | null;
+    };
+  }> {
+    return this.request("POST", "/api/tasks/convert-message", { messageId });
+  }
+
   // ── Agents ────────────────────────────────────────────
 
   async listAgents(): Promise<
