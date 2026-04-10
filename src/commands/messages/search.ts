@@ -60,6 +60,19 @@ export async function runSearch(opts: SearchOptions): Promise<void> {
   const limit = opts.limit !== undefined ? parseLimit(opts.limit) : undefined;
   const offset = opts.offset !== undefined ? parseOffset(opts.offset) : 0;
 
+  // Parse `--target` *before* the auth round-trip so a malformed target
+  // surfaces as INVALID_ARGS regardless of auth state — matching the
+  // ordering in `messages send` and `messages read`. parseTarget is a
+  // pure sync function, so this is free to hoist.
+  let parsedTarget;
+  if (opts.target) {
+    try {
+      parsedTarget = parseTarget(opts.target);
+    } catch (err) {
+      fail("INVALID_ARGS", err instanceof Error ? err.message : String(err));
+    }
+  }
+
   const auth = await ensureValidToken();
   const client = new ApiClient({
     serverUrl: auth.serverUrl,
@@ -68,15 +81,9 @@ export async function runSearch(opts: SearchOptions): Promise<void> {
   });
 
   let channelId: string | undefined;
-  if (opts.target) {
-    let parsed;
+  if (parsedTarget) {
     try {
-      parsed = parseTarget(opts.target);
-    } catch (err) {
-      fail("INVALID_ARGS", err instanceof Error ? err.message : String(err));
-    }
-    try {
-      channelId = await resolveTarget(client, parsed);
+      channelId = await resolveTarget(client, parsedTarget);
     } catch (err) {
       fail("NOT_FOUND", err instanceof Error ? err.message : String(err));
     }

@@ -195,13 +195,13 @@ describe("E2E smoke tests", () => {
       ],
       { expectFail: true }
     );
-    expect(exitCode).toBeGreaterThan(0);
+    expect(exitCode).toBe(1);
     const parsed = JSON.parse(stdout);
     expect(parsed.ok).toBe(false);
-    // Auth happens before parseTarget in the search command, so we get
-    // AUTH_FAILED here rather than INVALID_ARGS. Either error is fine —
-    // the test only proves the bad target doesn't crash the binary.
-    expect(["INVALID_ARGS", "AUTH_FAILED"]).toContain(parsed.error.code);
+    // parseTarget runs before ensureValidToken in runSearch (matching
+    // `messages send` ordering), so a malformed target is INVALID_ARGS
+    // regardless of auth state.
+    expect(parsed.error.code).toBe("INVALID_ARGS");
   });
 
   it("shows channels subcommand help", () => {
