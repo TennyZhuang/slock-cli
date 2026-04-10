@@ -197,6 +197,87 @@ export class ApiClient {
     });
   }
 
+  /**
+   * Fetch a single message plus its surrounding context.
+   *
+   * The server hardcodes the context window at ±15 messages around the
+   * target message; there is no query parameter to widen or narrow it.
+   * If callers need more context they should fall back to `listMessages`
+   * with a `before`/`after` cursor anchored at the target seq.
+   */
+  async getMessageContext(messageId: string): Promise<{
+    channelId: string;
+    targetMessageId: string;
+    hasOlder: boolean;
+    hasNewer: boolean;
+    messages: Array<{
+      id: string;
+      seq: number;
+      senderType: string;
+      senderId: string;
+      senderName?: string;
+      content: string;
+      createdAt: string;
+    }>;
+  }> {
+    return this.request(
+      "GET",
+      `/api/messages/context/${encodeURIComponent(messageId)}`
+    );
+  }
+
+  /**
+   * Search messages across the active server.
+   *
+   * Wraps `GET /api/messages/search`. Server clamps `limit` to 50 and
+   * defaults to 20 when omitted. Without `channelId` the search is
+   * server-wide; with `channelId` it is scoped to that channel and the
+   * caller must already be a member (server returns 403 otherwise).
+   *
+   * Date filters (`after` / `before`) accept any string the server can
+   * parse with `new Date(...)`; ISO 8601 is the safe choice.
+   */
+  async searchMessages(opts: {
+    query: string;
+    channelId?: string;
+    senderId?: string;
+    after?: string;
+    before?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    results: Array<{
+      id: string;
+      seq: number;
+      channelId: string;
+      threadId: string | null;
+      parentMessageId: string | null;
+      parentMessageContent: string | null;
+      parentChannelId: string;
+      parentChannelName: string;
+      parentChannelType: "channel" | "dm" | "thread";
+      senderId: string;
+      senderType: string;
+      senderName: string;
+      channelName: string;
+      channelType: "channel" | "dm" | "thread";
+      content: string;
+      snippet: string;
+      createdAt: string;
+    }>;
+    hasMore: boolean;
+  }> {
+    const params = new URLSearchParams();
+    params.set("q", opts.query);
+    if (opts.channelId) params.set("channelId", opts.channelId);
+    if (opts.senderId) params.set("senderId", opts.senderId);
+    if (opts.after) params.set("after", opts.after);
+    if (opts.before) params.set("before", opts.before);
+    if (opts.limit !== undefined) params.set("limit", String(opts.limit));
+    if (opts.offset !== undefined) params.set("offset", String(opts.offset));
+    return this.request("GET", `/api/messages/search?${params.toString()}`);
+  }
+
   // ── Tasks ─────────────────────────────────────────────
 
   async listTasks(

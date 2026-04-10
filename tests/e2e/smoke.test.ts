@@ -142,6 +142,66 @@ describe("E2E smoke tests", () => {
     expect(stdout).toContain("send");
     expect(stdout).toContain("read");
     expect(stdout).toContain("wait");
+    expect(stdout).toContain("get");
+    expect(stdout).toContain("search");
+  });
+
+  it("messages get requires auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "messages",
+        "get",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("messages search requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["messages", "search", "--query", "needle"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("top-level search alias requires auth", () => {
+    const { stdout, exitCode } = run(["search", "needle"], {
+      expectFail: true,
+    });
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("messages search rejects invalid --target before auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "messages",
+        "search",
+        "--query",
+        "needle",
+        "--target",
+        "invalid",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    // parseTarget runs before ensureValidToken in runSearch (matching
+    // `messages send` ordering), so a malformed target is INVALID_ARGS
+    // regardless of auth state.
+    expect(parsed.error.code).toBe("INVALID_ARGS");
   });
 
   it("shows channels subcommand help", () => {
