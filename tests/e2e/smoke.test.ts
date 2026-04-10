@@ -265,6 +265,58 @@ describe("E2E smoke tests", () => {
     expect(stdout).toContain("claim");
     expect(stdout).toContain("unclaim");
     expect(stdout).toContain("update");
+    expect(stdout).toContain("delete");
+    expect(stdout).toContain("convert-message");
+  });
+
+  it("tasks delete refuses without --yes", () => {
+    const { stdout, exitCode } = run(
+      ["tasks", "delete", "--target", "#general", "--number", "1"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("--yes");
+  });
+
+  it("tasks delete with --yes requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["tasks", "delete", "--target", "#general", "--number", "1", "--yes"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("tasks delete validates --number", () => {
+    const { stdout, exitCode } = run(
+      ["tasks", "delete", "--target", "#general", "--number", "abc", "--yes"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+  });
+
+  it("tasks convert-message requires auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "tasks",
+        "convert-message",
+        "--message-id",
+        "00000000-0000-0000-0000-000000000000",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
   });
 
   it("tasks list requires auth", () => {

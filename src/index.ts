@@ -34,6 +34,8 @@ import { registerTaskCreateCommand } from "./commands/tasks/create.js";
 import { registerTaskClaimCommand } from "./commands/tasks/claim.js";
 import { registerTaskUnclaimCommand } from "./commands/tasks/unclaim.js";
 import { registerTaskUpdateCommand } from "./commands/tasks/update.js";
+import { registerTaskDeleteCommand } from "./commands/tasks/delete.js";
+import { registerTaskConvertMessageCommand } from "./commands/tasks/convert-message.js";
 import { registerUploadCommand } from "./commands/attachments/upload.js";
 import { registerDownloadCommand } from "./commands/attachments/download.js";
 import { registerMachineListCommand } from "./commands/machines/list.js";
@@ -121,6 +123,8 @@ registerTaskCreateCommand(tasksCmd);
 registerTaskClaimCommand(tasksCmd);
 registerTaskUnclaimCommand(tasksCmd);
 registerTaskUpdateCommand(tasksCmd);
+registerTaskDeleteCommand(tasksCmd);
+registerTaskConvertMessageCommand(tasksCmd);
 
 // ── server ──────────────────────────────────────────────
 const serverCmd = program
