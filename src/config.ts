@@ -15,6 +15,27 @@ import os from "node:os";
 function getConfigDir(): string {
   return path.join(os.homedir(), ".slock-cli");
 }
+
+/**
+ * Process-wide profile override set by the global `--profile` flag at the
+ * program level. Subcommands that read profile state via `resolveConfig()`
+ * (or `getProfile()` with no name) will pick this up automatically.
+ *
+ * This exists because Commander.js does not propagate root-level options
+ * to subcommand action handlers — without this hack, `slock --profile foo
+ * channels list` would silently fall back to the default profile.
+ *
+ * Per-subcommand `--profile <name>` always wins over this override.
+ */
+let activeProfileOverride: string | null = null;
+
+export function setActiveProfileOverride(name: string | null): void {
+  activeProfileOverride = name;
+}
+
+export function getActiveProfileOverride(): string | null {
+  return activeProfileOverride;
+}
 function getConfigFile(): string {
   return path.join(getConfigDir(), "config.json");
 }
@@ -71,7 +92,8 @@ function profilePath(name: string): string {
 }
 
 export function getProfile(name?: string): Profile | null {
-  const profileName = name ?? getGlobalConfig().activeProfile;
+  const profileName =
+    name ?? activeProfileOverride ?? getGlobalConfig().activeProfile;
   return readJsonFile<Profile>(profilePath(profileName));
 }
 
@@ -118,7 +140,8 @@ export function resolveConfig(opts?: {
   profile?: string;
 }): ResolvedConfig {
   const globalConfig = getGlobalConfig();
-  const profileName = opts?.profile ?? globalConfig.activeProfile;
+  const profileName =
+    opts?.profile ?? activeProfileOverride ?? globalConfig.activeProfile;
   const profile = getProfile(profileName);
 
   return {

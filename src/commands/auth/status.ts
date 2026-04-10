@@ -7,6 +7,7 @@ import {
   getGlobalConfig,
   getProfile,
   listProfiles,
+  getActiveProfileOverride,
 } from "../../config.js";
 import { isTokenExpired } from "../../auth.js";
 import { success, fail } from "../../output.js";
@@ -18,7 +19,10 @@ export function registerStatusCommand(parent: Command): void {
     .option("--profile <name>", "Profile to check")
     .action(async (opts) => {
       const globalConfig = getGlobalConfig();
-      const profileName = opts.profile ?? globalConfig.activeProfile;
+      const profileName =
+        opts.profile ??
+        getActiveProfileOverride() ??
+        globalConfig.activeProfile;
       const profile = getProfile(profileName);
 
       if (!profile) {

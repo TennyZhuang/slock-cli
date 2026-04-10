@@ -12,9 +12,11 @@
 
 import { Command } from "commander";
 import { setOutputFormat, CliExit } from "./output.js";
+import { setActiveProfileOverride } from "./config.js";
 import { registerLoginCommand } from "./commands/auth/login.js";
 import { registerLogoutCommand } from "./commands/auth/logout.js";
 import { registerStatusCommand } from "./commands/auth/status.js";
+import { registerWhoamiCommand } from "./commands/auth/whoami.js";
 import { registerSendCommand } from "./commands/messages/send.js";
 import { registerReadCommand } from "./commands/messages/read.js";
 import { registerWaitCommand } from "./commands/messages/wait.js";
@@ -29,12 +31,17 @@ import { registerTaskUnclaimCommand } from "./commands/tasks/unclaim.js";
 import { registerTaskUpdateCommand } from "./commands/tasks/update.js";
 import { registerUploadCommand } from "./commands/attachments/upload.js";
 import { registerDownloadCommand } from "./commands/attachments/download.js";
+import { registerMachineListCommand } from "./commands/machines/list.js";
+import { registerMachineCreateCommand } from "./commands/machines/create.js";
+import { registerMachineRotateKeyCommand } from "./commands/machines/rotate-key.js";
+import { registerMachineRenameCommand } from "./commands/machines/rename.js";
+import { registerMachineDeleteCommand } from "./commands/machines/delete.js";
 
 const program = new Command();
 
 program
   .name("slock")
-  .description("CLI client for Slock platform (designed for agent usage)")
+  .description("CLI client for the Slock collaboration platform")
   .version("0.1.0")
   .option("--format <format>", "Output format: json (default) or text", "json")
   .option("--profile <name>", "Config profile to use")
@@ -45,6 +52,13 @@ program
     if (opts.format === "text" || opts.format === "json") {
       setOutputFormat(opts.format);
     }
+    // Propagate the global --profile flag to subcommands. Without this,
+    // commander does not pass root-level options through, and any command
+    // that doesn't redeclare its own --profile would silently fall back
+    // to the default profile.
+    if (typeof opts.profile === "string" && opts.profile.length > 0) {
+      setActiveProfileOverride(opts.profile);
+    }
   });
 
 // ── auth ────────────────────────────────────────────────
@@ -54,6 +68,7 @@ const authCmd = program
 registerLoginCommand(authCmd);
 registerLogoutCommand(authCmd);
 registerStatusCommand(authCmd);
+registerWhoamiCommand(authCmd);
 
 // ── messages ────────────────────────────────────────────
 const messagesCmd = program
@@ -93,6 +108,16 @@ const attachmentsCmd = program
   .description("Attachment operations");
 registerUploadCommand(attachmentsCmd);
 registerDownloadCommand(attachmentsCmd);
+
+// ── machines ────────────────────────────────────────────
+const machinesCmd = program
+  .command("machines")
+  .description("Machine (compute node) management");
+registerMachineListCommand(machinesCmd);
+registerMachineCreateCommand(machinesCmd);
+registerMachineRotateKeyCommand(machinesCmd);
+registerMachineRenameCommand(machinesCmd);
+registerMachineDeleteCommand(machinesCmd);
 
 program.parseAsync().catch((err) => {
   if (err instanceof CliExit) {

@@ -271,6 +271,88 @@ export class ApiClient {
     return this.request("GET", `/api/servers/${this.serverId}`);
   }
 
+  // ── Auth ──────────────────────────────────────────────
+
+  async getMe(): Promise<{
+    id: string;
+    email: string;
+    name: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+    emailVerified: boolean;
+  }> {
+    return this.request("GET", "/api/auth/me");
+  }
+
+  // ── Machines ──────────────────────────────────────────
+
+  async listMachines(): Promise<{
+    machines: Array<{
+      id: string;
+      name: string;
+      serverId: string;
+      status: string;
+      lastHeartbeat: string | null;
+      daemonVersion?: string | null;
+      // Server returns `runtimes: string[]` from buildMachineReadModel
+      // (services/machineReadModel.ts). The field is unused by the
+      // current `machines list` command but is the accurate shape, so
+      // future consumers get correct types out of the box.
+      runtimes?: string[];
+    }>;
+    latestDaemonVersion: string | null;
+  }> {
+    return this.request("GET", `/api/servers/${this.serverId}/machines`);
+  }
+
+  async registerMachine(name: string): Promise<{
+    machine: {
+      id: string;
+      name: string;
+      serverId: string;
+      status: string;
+    };
+    apiKey: string;
+  }> {
+    return this.request("POST", `/api/servers/${this.serverId}/machines`, {
+      name,
+    });
+  }
+
+  async renameMachine(
+    machineId: string,
+    name: string
+  ): Promise<{
+    id: string;
+    name: string;
+    serverId: string;
+    // Server currently returns the raw machine row including apiKeyHash.
+    // Callers MUST strip secret-bearing fields before surfacing the
+    // response to users; see commands/machines/rename.ts for the
+    // allow-list projection.
+    [extra: string]: unknown;
+  }> {
+    return this.request(
+      "PATCH",
+      `/api/servers/${this.serverId}/machines/${machineId}`,
+      { name }
+    );
+  }
+
+  async deleteMachine(machineId: string): Promise<{ ok: true }> {
+    return this.request(
+      "DELETE",
+      `/api/servers/${this.serverId}/machines/${machineId}`
+    );
+  }
+
+  async rotateMachineKey(machineId: string): Promise<{ apiKey: string }> {
+    return this.request(
+      "POST",
+      `/api/servers/${this.serverId}/machines/${machineId}/rotate-key`
+    );
+  }
+
   // ── Attachments ───────────────────────────────────────
 
   async uploadFile(
