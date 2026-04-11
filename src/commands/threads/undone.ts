@@ -9,7 +9,7 @@
 import type { Command } from "commander";
 import { ensureValidToken } from "../../auth.js";
 import { ApiClient } from "../../client.js";
-import { resolveThread } from "../../target.js";
+import { parseThreadSpec, resolveThreadSpec } from "../../target.js";
 import { success, fail } from "../../output.js";
 
 export function registerThreadUndoneCommand(parent: Command): void {
@@ -21,6 +21,14 @@ export function registerThreadUndoneCommand(parent: Command): void {
       "Thread channel UUID, or #channel:parentShortId / dm:@peer:parentShortId"
     )
     .action(async (opts) => {
+      // Sync parse before auth — see `unfollow.ts` for the rationale.
+      let spec;
+      try {
+        spec = parseThreadSpec(opts.thread);
+      } catch (err) {
+        fail("INVALID_ARGS", err instanceof Error ? err.message : String(err));
+      }
+
       const auth = await ensureValidToken();
       const client = new ApiClient({
         serverUrl: auth.serverUrl,
@@ -30,13 +38,9 @@ export function registerThreadUndoneCommand(parent: Command): void {
 
       let threadChannelId;
       try {
-        threadChannelId = await resolveThread(client, opts.thread);
+        threadChannelId = await resolveThreadSpec(client, spec);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.startsWith("Invalid thread") || msg.startsWith("Invalid target")) {
-          fail("INVALID_ARGS", msg);
-        }
-        fail("NOT_FOUND", msg);
+        fail("NOT_FOUND", err instanceof Error ? err.message : String(err));
       }
 
       await client.markThreadUndone(threadChannelId);

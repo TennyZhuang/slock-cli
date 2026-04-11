@@ -137,13 +137,27 @@ export async function resolveTarget(
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Resolve a `--thread` flag value to a thread channel UUID.
+ * Parsed shape of a `--thread` flag value. Either a raw UUID (no API
+ * call needed to resolve) or a target string that still needs the API
+ * to map name → UUID. Splitting parse from resolve lets callers run
+ * the sync syntax check before `ensureValidToken()` so a malformed
+ * `--thread` reports INVALID_ARGS regardless of auth state — same
+ * temporal-ordering convention as `messages send` / `messages search`
+ * (see PR-A `6543337` for the precedent).
+ */
+export type ThreadSpec =
+  | { kind: "uuid"; uuid: string }
+  | { kind: "target"; target: Target };
+
+/**
+ * Pure sync parse of a `--thread` flag value. Throws on syntax errors;
+ * never makes API calls.
  *
  * Accepts two forms:
- *   - A raw UUID — assumed to be the thread channel id, returned as-is.
- *     This is what `threads list` (followed mode) and the server's
- *     follow/unfollow/done/undone endpoints emit, so round-tripping
- *     output → input must work without parsing.
+ *   - A raw UUID — assumed to be the thread channel id, wrapped as
+ *     `{kind: "uuid"}`. This is what `threads list` (followed mode)
+ *     and the server's follow/unfollow/done/undone endpoints emit, so
+ *     round-tripping output → input must work without parsing.
  *   - A target string with an explicit thread segment:
  *     `#channel:parentMsgShortId` or `dm:@peer:parentMsgShortId`. The
  *     parent-message short id is what `messages send`/`read` already
@@ -155,14 +169,19 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * or a non-UUID non-target string) is rejected — those are channel
  * targets, not thread targets, and silently treating a channel as a
  * thread would be very confusing.
+ *
+ * Callers should map the thrown error to INVALID_ARGS. The companion
+ * `resolveThreadSpec` handles the async API path; mapping for *its*
+ * errors is NOT_FOUND.
  */
-export async function resolveThread(
-  client: ApiClient,
-  raw: string
-): Promise<string> {
+export function parseThreadSpec(raw: string): ThreadSpec {
   if (UUID_RE.test(raw)) {
-    return raw;
+    return { kind: "uuid", uuid: raw };
   }
+  // parseTarget throws on bad syntax — caller catches and maps to
+  // INVALID_ARGS. We pre-check the threadId requirement here so the
+  // error message is specific to threads ("must be a UUID or include
+  // an explicit thread segment") rather than the generic target one.
   const target = parseTarget(raw);
   if (!target.threadId) {
     throw new Error(
@@ -170,5 +189,28 @@ export async function resolveThread(
         `(e.g. "#general:abc123" or "dm:@alice:abc123")`
     );
   }
-  return resolveTarget(client, target);
+  return { kind: "target", target };
+}
+
+/**
+ * Async resolve of a parsed ThreadSpec to a thread channel UUID.
+ *
+ * For `{kind: "uuid"}` this is a no-op pass-through (still kept on
+ * the async API for symmetry — callers don't have to special-case).
+ * For `{kind: "target"}` this delegates to `resolveTarget` which hits
+ * the API to map channel/peer names → UUIDs and creates the thread
+ * channel via `getOrCreateThread` if needed.
+ *
+ * Errors thrown here come from API resolution failures (channel not
+ * found, peer not found, parent message not found) — callers should
+ * map them to NOT_FOUND.
+ */
+export async function resolveThreadSpec(
+  client: ApiClient,
+  spec: ThreadSpec
+): Promise<string> {
+  if (spec.kind === "uuid") {
+    return spec.uuid;
+  }
+  return resolveTarget(client, spec.target);
 }

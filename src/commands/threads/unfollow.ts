@@ -19,7 +19,7 @@
 import type { Command } from "commander";
 import { ensureValidToken } from "../../auth.js";
 import { ApiClient } from "../../client.js";
-import { resolveThread } from "../../target.js";
+import { parseThreadSpec, resolveThreadSpec } from "../../target.js";
 import { success, fail } from "../../output.js";
 
 export function registerThreadUnfollowCommand(parent: Command): void {
@@ -31,6 +31,20 @@ export function registerThreadUnfollowCommand(parent: Command): void {
       "Thread channel UUID, or #channel:parentShortId / dm:@peer:parentShortId"
     )
     .action(async (opts) => {
+      // Sync parse runs BEFORE auth so a malformed --thread reports
+      // INVALID_ARGS regardless of login state — same temporal-ordering
+      // convention as `messages send` / `messages search`. The async
+      // resolve runs after auth (it needs the API client) and its
+      // errors map to NOT_FOUND. The structural split makes
+      // INVALID_ARGS-vs-NOT_FOUND a function-boundary distinction
+      // instead of a brittle error-message prefix match.
+      let spec;
+      try {
+        spec = parseThreadSpec(opts.thread);
+      } catch (err) {
+        fail("INVALID_ARGS", err instanceof Error ? err.message : String(err));
+      }
+
       const auth = await ensureValidToken();
       const client = new ApiClient({
         serverUrl: auth.serverUrl,
@@ -40,20 +54,9 @@ export function registerThreadUnfollowCommand(parent: Command): void {
 
       let threadChannelId;
       try {
-        threadChannelId = await resolveThread(client, opts.thread);
+        threadChannelId = await resolveThreadSpec(client, spec);
       } catch (err) {
-        // resolveThread throws on invalid syntax (handled like INVALID_ARGS
-        // since the user-supplied --thread didn't parse) OR on a missing
-        // channel/thread (NOT_FOUND once we hit the API). We can't
-        // distinguish without inspecting the message, but the syntax
-        // errors all start with "Invalid thread"/"Invalid target" which
-        // is the parser-level signal — anything else is a resolution
-        // failure from the API path.
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.startsWith("Invalid thread") || msg.startsWith("Invalid target")) {
-          fail("INVALID_ARGS", msg);
-        }
-        fail("NOT_FOUND", msg);
+        fail("NOT_FOUND", err instanceof Error ? err.message : String(err));
       }
 
       await client.unfollowThread(threadChannelId);

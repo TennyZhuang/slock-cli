@@ -665,8 +665,9 @@ describe("E2E smoke tests", () => {
       ],
       { expectFail: true }
     );
-    // resolveThread short-circuits on UUIDs without hitting the API,
-    // so we reach ensureValidToken → AUTH_FAILED.
+    // parseThreadSpec short-circuits on UUIDs without parsing as a
+    // target, so the sync syntax check passes and we reach
+    // ensureValidToken → AUTH_FAILED.
     expect(exitCode).toBe(4);
     const parsed = JSON.parse(stdout);
     expect(parsed.ok).toBe(false);
@@ -698,5 +699,45 @@ describe("E2E smoke tests", () => {
     const parsed = JSON.parse(stdout);
     expect(parsed.ok).toBe(false);
     expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  // Temporal-ordering regression coverage: malformed --thread must
+  // report INVALID_ARGS regardless of auth state. Same convention as
+  // `messages send` / `messages search` (PR-A `6543337`). The fix
+  // splits resolveThread into a sync `parseThreadSpec` (runs before
+  // ensureValidToken) and an async `resolveThreadSpec` (runs after).
+  // Without the split, "garbage" would resolve as AUTH_FAILED first.
+
+  it("threads unfollow rejects malformed --thread before auth", () => {
+    const { stdout, exitCode } = run(
+      ["threads", "unfollow", "--thread", "garbage"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+  });
+
+  it("threads done rejects malformed --thread before auth", () => {
+    const { stdout, exitCode } = run(
+      ["threads", "done", "--thread", "garbage"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+  });
+
+  it("threads undone rejects malformed --thread before auth", () => {
+    const { stdout, exitCode } = run(
+      ["threads", "undone", "--thread", "garbage"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
   });
 });

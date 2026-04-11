@@ -59,6 +59,12 @@ export function registerThreadListCommand(parent: Command): void {
             })
             .join("\n");
         });
+        // Explicit return: `success` currently throws CliExit so this
+        // is unreachable, but if that contract ever changes the
+        // in-channel branch below would silently run with
+        // `opts.target === undefined` and confuse the diagnostics.
+        // Cheap defensive guard.
+        return;
       }
 
       // --target → in-channel mode. parseTarget runs before auth so a
