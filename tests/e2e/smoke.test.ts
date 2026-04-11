@@ -210,6 +210,11 @@ describe("E2E smoke tests", () => {
     expect(stdout).toContain("list");
     expect(stdout).toContain("join");
     expect(stdout).toContain("create");
+    expect(stdout).toContain("get");
+    expect(stdout).toContain("delete");
+    expect(stdout).toContain("leave");
+    expect(stdout).toContain("read");
+    expect(stdout).toContain("members");
   });
 
   it("messages read requires auth", () => {
@@ -363,6 +368,198 @@ describe("E2E smoke tests", () => {
   it("attachments download requires auth", () => {
     const { stdout, exitCode } = run(
       ["attachments", "download", "--id", "00000000-0000-0000-0000-000000000000"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  // ── PR-C: channels round-out smoke tests ────────────────
+
+  it("channels get requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["channels", "get", "--target", "#general"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("channels get rejects invalid target", () => {
+    const { stdout, exitCode } = run(
+      ["channels", "get", "--target", "garbage"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+  });
+
+  it("channels delete refuses without --yes", () => {
+    const { stdout, exitCode } = run(
+      ["channels", "delete", "--target", "#general"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("--yes");
+    expect(parsed.error.message).toContain("channels delete");
+  });
+
+  it("channels delete --yes gate runs before target validation", () => {
+    // Even with a malformed target, the --yes gate should fire first.
+    // This proves the destructive-confirmation diagnostic isn't drowned
+    // out by other arg errors (mirrors the convention from tasks delete).
+    const { stdout, exitCode } = run(
+      ["channels", "delete", "--target", "garbage"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("--yes");
+  });
+
+  it("channels delete with --yes requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["channels", "delete", "--target", "#general", "--yes"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("channels leave requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["channels", "leave", "--target", "#general"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("channels read requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["channels", "read", "--target", "#general"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("channels read validates --seq", () => {
+    const { stdout, exitCode } = run(
+      ["channels", "read", "--target", "#general", "--seq", "abc"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("--seq");
+  });
+
+  it("shows channels members subcommand help", () => {
+    const { stdout, exitCode } = run(["channels", "members", "--help"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("list");
+    expect(stdout).toContain("add");
+    expect(stdout).toContain("remove");
+  });
+
+  it("channels members list requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["channels", "members", "list", "--target", "#general"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("channels members add requires exactly one of --agent or --user", () => {
+    // Neither flag → INVALID_ARGS
+    const neither = run(
+      ["channels", "members", "add", "--target", "#general"],
+      { expectFail: true }
+    );
+    expect(neither.exitCode).toBe(1);
+    expect(JSON.parse(neither.stdout).error.code).toBe("INVALID_ARGS");
+
+    // Both flags → INVALID_ARGS
+    const both = run(
+      [
+        "channels",
+        "members",
+        "add",
+        "--target",
+        "#general",
+        "--agent",
+        "00000000-0000-0000-0000-000000000000",
+        "--user",
+        "00000000-0000-0000-0000-000000000000",
+      ],
+      { expectFail: true }
+    );
+    expect(both.exitCode).toBe(1);
+    expect(JSON.parse(both.stdout).error.code).toBe("INVALID_ARGS");
+  });
+
+  it("channels members add with --agent requires auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "channels",
+        "members",
+        "add",
+        "--target",
+        "#general",
+        "--agent",
+        "00000000-0000-0000-0000-000000000000",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("channels members remove requires exactly one of --agent or --user", () => {
+    const { stdout, exitCode } = run(
+      ["channels", "members", "remove", "--target", "#general"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+  });
+
+  it("channels members remove with --agent requires auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "channels",
+        "members",
+        "remove",
+        "--target",
+        "#general",
+        "--agent",
+        "00000000-0000-0000-0000-000000000000",
+      ],
       { expectFail: true }
     );
     expect(exitCode).toBe(4);

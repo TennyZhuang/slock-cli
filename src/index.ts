@@ -28,6 +28,13 @@ import {
 import { registerChannelListCommand } from "./commands/channels/list.js";
 import { registerChannelJoinCommand } from "./commands/channels/join.js";
 import { registerChannelCreateCommand } from "./commands/channels/create.js";
+import { registerChannelGetCommand } from "./commands/channels/get.js";
+import { registerChannelDeleteCommand } from "./commands/channels/delete.js";
+import { registerChannelLeaveCommand } from "./commands/channels/leave.js";
+import { registerChannelReadCommand } from "./commands/channels/read.js";
+import { registerChannelMembersListCommand } from "./commands/channels/members/list.js";
+import { registerChannelMembersAddCommand } from "./commands/channels/members/add.js";
+import { registerChannelMembersRemoveCommand } from "./commands/channels/members/remove.js";
 import { registerServerInfoCommand } from "./commands/server/info.js";
 import { registerTaskListCommand } from "./commands/tasks/list.js";
 import { registerTaskCreateCommand } from "./commands/tasks/create.js";
@@ -113,6 +120,18 @@ const channelsCmd = program
 registerChannelListCommand(channelsCmd);
 registerChannelJoinCommand(channelsCmd);
 registerChannelCreateCommand(channelsCmd);
+registerChannelGetCommand(channelsCmd);
+registerChannelDeleteCommand(channelsCmd);
+registerChannelLeaveCommand(channelsCmd);
+registerChannelReadCommand(channelsCmd);
+
+// ── channels members (subcommand group) ─────────────────
+const channelMembersCmd = channelsCmd
+  .command("members")
+  .description("Channel membership management");
+registerChannelMembersListCommand(channelMembersCmd);
+registerChannelMembersAddCommand(channelMembersCmd);
+registerChannelMembersRemoveCommand(channelMembersCmd);
 
 // ── tasks ───────────────────────────────────────────────
 const tasksCmd = program
