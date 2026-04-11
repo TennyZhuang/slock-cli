@@ -103,9 +103,42 @@ export class ApiClient {
     return this.request("POST", "/api/channels", { name, description });
   }
 
-  async getChannelMembers(
-    channelId: string
-  ): Promise<Array<{ id: string; name: string; type: string }>> {
+  /**
+   * List a channel's members. Server returns two parallel arrays
+   * (`agents` and `humans`) — NOT a flat list, and the per-row shapes
+   * differ between the two (agents have `status`, humans have
+   * `gravatarHash`). The "type" of each member is implied by which
+   * array it sits in; there is no `type` field on either side.
+   *
+   * Source: `channelService.getChannelMembers` at staging
+   * `19b4c52 packages/server/src/services/channelService.ts:678-691`,
+   * which composes `getChannelAgents` (selects id, name, displayName,
+   * status, avatarUrl) and `getChannelHumans` (selects id, name,
+   * displayName, avatarUrl + derived gravatarHash, with email stripped).
+   *
+   * History: pre-`2026-04-11` this method was typed as a flat
+   * `Array<{id, name, type}>` and went un-exercised because no CLI
+   * command consumed it. PR-C added `channels members list` and
+   * Stone caught the resulting runtime crash on review (the typed
+   * `.map(...)` would have thrown `members.map is not a function`
+   * post-auth). Fix landed alongside the consumer in the same PR.
+   */
+  async getChannelMembers(channelId: string): Promise<{
+    agents: Array<{
+      id: string;
+      name: string;
+      displayName: string | null;
+      status: string;
+      avatarUrl: string | null;
+    }>;
+    humans: Array<{
+      id: string;
+      name: string;
+      displayName: string | null;
+      avatarUrl: string | null;
+      gravatarHash: string;
+    }>;
+  }> {
     return this.request("GET", `/api/channels/${channelId}/members`);
   }
 

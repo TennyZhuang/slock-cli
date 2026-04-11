@@ -41,18 +41,22 @@ export function registerChannelMembersListCommand(parent: Command): void {
         fail("NOT_FOUND", err instanceof Error ? err.message : String(err));
       }
 
-      const members = await client.getChannelMembers(channelId);
+      const { agents, humans } = await client.getChannelMembers(channelId);
 
+      // Server returns two parallel arrays; we surface them separately
+      // in JSON (callers can pattern-match on agent vs. human without a
+      // string type tag) and merge them in the text formatter for the
+      // typical "who's in this channel" rendering.
       success(
-        { target: opts.target, channelId, members },
-        (d) =>
-          d.members.length === 0
-            ? "(no members)"
-            : d.members
-                .map(
-                  (m) => `  ${m.type === "agent" ? "@" : ""}${m.name} [${m.type}]`
-                )
-                .join("\n")
+        { target: opts.target, channelId, agents, humans },
+        (d) => {
+          const total = d.agents.length + d.humans.length;
+          if (total === 0) return "(no members)";
+          return [
+            ...d.agents.map((a) => `  @${a.name} [agent]`),
+            ...d.humans.map((h) => `  ${h.name} [human]`),
+          ].join("\n");
+        }
       );
     });
 }
