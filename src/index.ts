@@ -50,6 +50,11 @@ import { registerMachineCreateCommand } from "./commands/machines/create.js";
 import { registerMachineRotateKeyCommand } from "./commands/machines/rotate-key.js";
 import { registerMachineRenameCommand } from "./commands/machines/rename.js";
 import { registerMachineDeleteCommand } from "./commands/machines/delete.js";
+import { registerThreadListCommand } from "./commands/threads/list.js";
+import { registerThreadFollowCommand } from "./commands/threads/follow.js";
+import { registerThreadUnfollowCommand } from "./commands/threads/unfollow.js";
+import { registerThreadDoneCommand } from "./commands/threads/done.js";
+import { registerThreadUndoneCommand } from "./commands/threads/undone.js";
 
 const program = new Command();
 
@@ -167,6 +172,16 @@ registerMachineCreateCommand(machinesCmd);
 registerMachineRotateKeyCommand(machinesCmd);
 registerMachineRenameCommand(machinesCmd);
 registerMachineDeleteCommand(machinesCmd);
+
+// ── threads ─────────────────────────────────────────────
+const threadsCmd = program
+  .command("threads")
+  .description("Thread operations (follow/unfollow/done lifecycle)");
+registerThreadListCommand(threadsCmd);
+registerThreadFollowCommand(threadsCmd);
+registerThreadUnfollowCommand(threadsCmd);
+registerThreadDoneCommand(threadsCmd);
+registerThreadUndoneCommand(threadsCmd);
 
 program.parseAsync().catch((err) => {
   if (err instanceof CliExit) {
