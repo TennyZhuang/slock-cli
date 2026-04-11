@@ -103,10 +103,150 @@ export class ApiClient {
     return this.request("POST", "/api/channels", { name, description });
   }
 
-  async getChannelMembers(
-    channelId: string
-  ): Promise<Array<{ id: string; name: string; type: string }>> {
+  /**
+   * List a channel's members. Server returns two parallel arrays
+   * (`agents` and `humans`) — NOT a flat list, and the per-row shapes
+   * differ between the two (agents have `status`, humans have
+   * `gravatarHash`). The "type" of each member is implied by which
+   * array it sits in; there is no `type` field on either side.
+   *
+   * Source: `channelService.getChannelMembers` at staging
+   * `19b4c52 packages/server/src/services/channelService.ts:678-691`,
+   * which composes `getChannelAgents` (selects id, name, displayName,
+   * status, avatarUrl) and `getChannelHumans` (selects id, name,
+   * displayName, avatarUrl + derived gravatarHash, with email stripped).
+   *
+   * History: pre-`2026-04-11` this method was typed as a flat
+   * `Array<{id, name, type}>` and went un-exercised because no CLI
+   * command consumed it. PR-C added `channels members list` and
+   * Stone caught the resulting runtime crash on review (the typed
+   * `.map(...)` would have thrown `members.map is not a function`
+   * post-auth). Fix landed alongside the consumer in the same PR.
+   */
+  async getChannelMembers(channelId: string): Promise<{
+    agents: Array<{
+      id: string;
+      name: string;
+      displayName: string | null;
+      status: string;
+      avatarUrl: string | null;
+    }>;
+    humans: Array<{
+      id: string;
+      name: string;
+      displayName: string | null;
+      avatarUrl: string | null;
+      gravatarHash: string;
+    }>;
+  }> {
     return this.request("GET", `/api/channels/${channelId}/members`);
+  }
+
+  /**
+   * Fetch a single channel by id. Returns the raw channel row from
+   * `channelService.getChannel`: id, serverId, name, description (nullable),
+   * type ('channel'|'dm'|'thread'), parentMessageId (nullable for non-thread),
+   * createdAt, deletedAt (nullable — server filters out deleted channels by
+   * default, so this is normally null).
+   */
+  async getChannel(channelId: string): Promise<{
+    id: string;
+    serverId: string;
+    name: string;
+    description: string | null;
+    type: "channel" | "dm" | "thread";
+    parentMessageId: string | null;
+    createdAt: string;
+    deletedAt: string | null;
+  }> {
+    return this.request("GET", `/api/channels/${channelId}`);
+  }
+
+  /**
+   * Soft-delete a channel. The server enforces that the built-in `#all`
+   * channel cannot be deleted (returns 403 with that exact message).
+   * Permission gating: regular channels require `manageChannels` capability
+   * (admin/owner only); DMs require participant. The destructive nature is
+   * gated CLI-side via the standard `--yes` convention; see
+   * `commands/tasks/delete.ts` module header for the canonical reference.
+   */
+  async deleteChannel(channelId: string): Promise<{ ok: true }> {
+    return this.request("DELETE", `/api/channels/${channelId}`);
+  }
+
+  /**
+   * Leave a channel (self). The server rejects DM channels with 403 — DMs
+   * use the soft-delete path instead. The CLI surfaces the server's 403
+   * as `FORBIDDEN`.
+   */
+  async leaveChannel(channelId: string): Promise<{ ok: true }> {
+    return this.request("POST", `/api/channels/${channelId}/leave`);
+  }
+
+  /**
+   * Mark a channel as read up to a specific seq. The server requires the
+   * `seq` body field — it does NOT default to "latest" if omitted (returns
+   * 400 instead). Use `markChannelReadAll` for "mark fully read" semantics.
+   */
+  async markChannelRead(
+    channelId: string,
+    seq: number
+  ): Promise<{ ok: true }> {
+    return this.request("POST", `/api/channels/${channelId}/read`, { seq });
+  }
+
+  /**
+   * Mark a channel as fully read (latest seq). Returns the seq the server
+   * actually marked read at, which the CLI surfaces in JSON for callers
+   * that need to compute "what's new since I last read this."
+   */
+  async markChannelReadAll(
+    channelId: string
+  ): Promise<{ ok: true; seq: number }> {
+    return this.request("POST", `/api/channels/${channelId}/read-all`);
+  }
+
+  /**
+   * Add a channel member. Server accepts either `{agentId}` or `{userId}`
+   * — exactly one must be provided. Auth: regular channels require
+   * `manageChannels` capability; DM channels require participant.
+   * Validation errors (e.g. agent not in this server, user not a member
+   * of this server) come back as 400 → `GENERAL_ERROR`.
+   */
+  async addChannelMember(
+    channelId: string,
+    target: { agentId: string } | { userId: string }
+  ): Promise<{ ok: true }> {
+    return this.request("POST", `/api/channels/${channelId}/members`, target);
+  }
+
+  /**
+   * Remove a channel member. The server splits agent and user removal into
+   * two distinct routes (`/members/agent/:id` vs `/members/user/:id`), so
+   * the caller must commit to the member type up front. The CLI exposes
+   * this via `--agent` / `--user` mutually-exclusive flags.
+   *
+   * DM-specific quirk: removing a user from a DM is only permitted if the
+   * caller is removing themselves (server returns 403 otherwise).
+   */
+  async removeChannelAgent(
+    channelId: string,
+    agentId: string
+  ): Promise<{ ok: true }> {
+    return this.request(
+      "DELETE",
+      `/api/channels/${channelId}/members/agent/${agentId}`
+    );
+  }
+
+  async removeChannelUser(
+    channelId: string,
+    userId: string
+  ): Promise<{ ok: true }> {
+    return this.request(
+      "DELETE",
+      `/api/channels/${channelId}/members/user/${userId}`
+    );
   }
 
   async findOrCreateDM(
@@ -381,11 +521,32 @@ export class ApiClient {
 
   // ── Server ────────────────────────────────────────────
 
+  /**
+   * List members of the active server.
+   *
+   * NOTE: the server returns `userId` (not `id`) — `getServerMembers` in
+   * `serverService.ts` strips the email and aliases the join'd `users.id`
+   * column to `userId` in the SELECT projection. The returned objects have:
+   * `userId, name, displayName, avatarUrl, role, joinedAt, gravatarHash`.
+   *
+   * Prior to PR-C this client typed the field as `id`, which was a latent
+   * bug — the `dm:@username` resolution path in `target.ts:resolveTarget`
+   * would `findOrCreateDM({userId: undefined})` whenever the peer wasn't
+   * an agent. The path was simply never exercised by tests. Fixed in PR-C
+   * along with the channel-members work that surfaced it.
+   */
   async listServerMembers(): Promise<
-    Array<{ id: string; name: string; role: string }>
+    Array<{
+      userId: string;
+      name: string;
+      displayName: string | null;
+      avatarUrl: string | null;
+      role: string;
+      joinedAt: string;
+      gravatarHash: string;
+    }>
   > {
-    const config = this.serverId;
-    return this.request("GET", `/api/servers/${config}/members`);
+    return this.request("GET", `/api/servers/${this.serverId}/members`);
   }
 
   async getServerInfo(): Promise<{ id: string; name: string; slug: string }> {

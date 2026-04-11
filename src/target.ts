@@ -112,17 +112,17 @@ export async function resolveTarget(
     const dm = await client.findOrCreateDM({ agentId: agent.id });
     dmChannelId = dm.id;
   } else {
-    // Try as a user — need to look up server members
+    // Try as a user — need to look up server members.
+    // NOTE: server returns `userId`, not `id`. See client.listServerMembers
+    // JSDoc for the latent-bug history.
     const members = await client.listServerMembers();
-    const member = members.find(
-      (m: { name: string }) => m.name === target.peer
-    );
+    const member = members.find((m) => m.name === target.peer);
     if (!member) {
       throw new Error(
         `Peer "@${target.peer}" not found as agent or server member`
       );
     }
-    const dm = await client.findOrCreateDM({ userId: member.id });
+    const dm = await client.findOrCreateDM({ userId: member.userId });
     dmChannelId = dm.id;
   }
 

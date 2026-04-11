@@ -51,7 +51,7 @@ export function registerServerInfoCommand(parent: Command): void {
             status: a.status,
           })),
           members: members.map((m) => ({
-            id: m.id,
+            userId: m.userId,
             name: m.name,
             role: m.role,
           })),
