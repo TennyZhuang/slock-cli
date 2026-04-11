@@ -13,6 +13,59 @@ export interface ApiClientConfig {
   accessToken: string;
 }
 
+/**
+ * Full agent shape returned by GET/POST/PATCH on /api/agents.
+ *
+ * Source of truth: `packages/server/src/services/agentService.ts` —
+ * `getAgents`/`getAgent` enrich the DB row with the orchestrator's
+ * transient `activity`/`activityDetail` (in-memory, not in DB) before
+ * returning. The DB row itself comes from
+ * `packages/server/src/db/schema.ts`.
+ *
+ * Field semantics worth knowing:
+ *
+ * - `status` is server-managed: `active` (running) / `inactive` (idle
+ *   or never started) / `stopped` (manually stopped). It is NOT
+ *   settable via PATCH — `start`/`stop`/`reset` lifecycle endpoints
+ *   are the only way to mutate it. PATCH attempts on `status` are
+ *   silently ignored by the server.
+ * - `activity` is transient (orchestrator broadcast, in-memory only):
+ *   `online` / `thinking` / `working` / `error` / `offline`. Can go
+ *   stale if the daemon disconnects without notifying the server.
+ *   Durable activity history lives at GET /api/agents/:id/activity-log
+ *   (not yet wrapped — outside PR-E scope).
+ * - `envVars` is sensitive (may contain API keys). The server strips
+ *   it for non-`manageAgents` callers on read paths but returns it
+ *   intact in the create/update responses for the manager who just
+ *   set it. CLI consumers who don't want to print secrets should pick
+ *   the fields they need rather than dumping the whole object.
+ * - `name` is immutable post-create (server uniqueness invariant
+ *   relies on it). PATCH body has `displayName` instead.
+ * - `sessionId` is daemon-computed on first run; always null until
+ *   the agent has actually started at least once.
+ */
+export interface Agent {
+  id: string;
+  serverId: string;
+  name: string;
+  displayName: string | null;
+  description: string | null;
+  avatarUrl: string | null;
+  status: "active" | "inactive" | "stopped";
+  sessionId: string | null;
+  model: string;
+  runtime: string;
+  reasoningEffort: "low" | "medium" | "high" | "xhigh" | null;
+  envVars: Record<string, string> | null;
+  executionMode: "byoc" | "cloud";
+  machineId: string | null;
+  activity: string;
+  activityDetail: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
 export class ApiClient {
   private serverUrl: string;
   private serverId: string;
@@ -602,16 +655,102 @@ export class ApiClient {
 
   // ── Agents ────────────────────────────────────────────
 
-  async listAgents(): Promise<
-    Array<{
-      id: string;
-      name: string;
-      displayName: string | null;
-      status: string;
-      activity: string;
-    }>
-  > {
+  async listAgents(): Promise<Agent[]> {
     return this.request("GET", "/api/agents");
+  }
+
+  async getAgent(agentId: string): Promise<Agent> {
+    return this.request("GET", `/api/agents/${agentId}`);
+  }
+
+  async createAgent(body: {
+    name: string;
+    description?: string;
+    model?: string;
+    runtime?: string;
+    reasoningEffort?: "low" | "medium" | "high" | "xhigh";
+    machineId?: string;
+    envVars?: Record<string, string>;
+  }): Promise<Agent> {
+    return this.request("POST", "/api/agents", body);
+  }
+
+  /**
+   * Update an agent. All fields optional; omit to leave unchanged. Pass
+   * `null` to clear a nullable field. `name` is intentionally NOT in
+   * this body — agent names are immutable once created (server-side
+   * uniqueness invariant relies on this; renaming would require a
+   * server PR to handle the cascade through orchestrator state and
+   * channel-name display caches). Use `displayName` for the
+   * user-visible label.
+   */
+  async updateAgent(
+    agentId: string,
+    body: {
+      displayName?: string | null;
+      description?: string | null;
+      avatarUrl?: string | null;
+      model?: string;
+      reasoningEffort?: "low" | "medium" | "high" | "xhigh" | null;
+      envVars?: Record<string, string> | null;
+    }
+  ): Promise<Agent> {
+    return this.request("PATCH", `/api/agents/${agentId}`, body);
+  }
+
+  async deleteAgent(agentId: string): Promise<{ ok: true }> {
+    return this.request("DELETE", `/api/agents/${agentId}`);
+  }
+
+  async startAgent(agentId: string): Promise<{ ok: true }> {
+    return this.request("POST", `/api/agents/${agentId}/start`);
+  }
+
+  async stopAgent(agentId: string): Promise<{ ok: true }> {
+    return this.request("POST", `/api/agents/${agentId}/stop`);
+  }
+
+  /**
+   * Reset modes (server: `routes/agents.ts` reset handler):
+   *   - `restart` — stop + restart, preserves sessionId (full context)
+   *   - `session` — stop + null sessionId + restart (fresh CLI session,
+   *     loses context but keeps workspace files)
+   *   - `full` — like `session` PLUS sends `agent:reset-workspace` to
+   *     the daemon which deletes ~/.slock/agents/{id}/ (workspace and
+   *     MEMORY.md gone). Genuinely destructive of agent state, but
+   *     reversible-by-recreation since the agent record itself stays.
+   *
+   * Legacy `clearWorkspace: boolean` body is also accepted server-side
+   * for backward-compat with older callers; the CLI uses the explicit
+   * `mode` form throughout.
+   */
+  async resetAgent(
+    agentId: string,
+    mode: "restart" | "session" | "full"
+  ): Promise<{ ok: true }> {
+    return this.request("POST", `/api/agents/${agentId}/reset`, { mode });
+  }
+
+  /**
+   * Assign or unassign an agent's machine. Pass `null` to unassign.
+   *
+   * The server accepts UUIDs only — no name resolution at the route
+   * layer. The CLI's `agents create --machine <id|name>` and
+   * `agents assign-machine --machine <id|name>` do the name → id
+   * lookup via `resolveMachineId` (in `src/resolvers.ts`) before
+   * calling this method.
+   *
+   * Reassigning a running agent auto-stops it first (server orchestrator
+   * handles the transition). Assignment alone does NOT auto-start —
+   * call `startAgent` separately if you want the agent active.
+   */
+  async assignAgentMachine(
+    agentId: string,
+    machineId: string | null
+  ): Promise<{ ok: true }> {
+    return this.request("POST", `/api/agents/${agentId}/assign-machine`, {
+      machineId,
+    });
   }
 
   // ── Server ────────────────────────────────────────────

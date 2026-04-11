@@ -55,6 +55,15 @@ import { registerThreadFollowCommand } from "./commands/threads/follow.js";
 import { registerThreadUnfollowCommand } from "./commands/threads/unfollow.js";
 import { registerThreadDoneCommand } from "./commands/threads/done.js";
 import { registerThreadUndoneCommand } from "./commands/threads/undone.js";
+import { registerAgentListCommand } from "./commands/agents/list.js";
+import { registerAgentGetCommand } from "./commands/agents/get.js";
+import { registerAgentCreateCommand } from "./commands/agents/create.js";
+import { registerAgentUpdateCommand } from "./commands/agents/update.js";
+import { registerAgentDeleteCommand } from "./commands/agents/delete.js";
+import { registerAgentStartCommand } from "./commands/agents/start.js";
+import { registerAgentStopCommand } from "./commands/agents/stop.js";
+import { registerAgentResetCommand } from "./commands/agents/reset.js";
+import { registerAgentAssignMachineCommand } from "./commands/agents/assign-machine.js";
 
 const program = new Command();
 
@@ -182,6 +191,20 @@ registerThreadFollowCommand(threadsCmd);
 registerThreadUnfollowCommand(threadsCmd);
 registerThreadDoneCommand(threadsCmd);
 registerThreadUndoneCommand(threadsCmd);
+
+// ── agents ──────────────────────────────────────────────
+const agentsCmd = program
+  .command("agents")
+  .description("Agent CRUD and lifecycle (most commands require manageAgents)");
+registerAgentListCommand(agentsCmd);
+registerAgentGetCommand(agentsCmd);
+registerAgentCreateCommand(agentsCmd);
+registerAgentUpdateCommand(agentsCmd);
+registerAgentDeleteCommand(agentsCmd);
+registerAgentStartCommand(agentsCmd);
+registerAgentStopCommand(agentsCmd);
+registerAgentResetCommand(agentsCmd);
+registerAgentAssignMachineCommand(agentsCmd);
 
 program.parseAsync().catch((err) => {
   if (err instanceof CliExit) {
