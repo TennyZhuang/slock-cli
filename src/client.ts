@@ -264,6 +264,101 @@ export class ApiClient {
     });
   }
 
+  // ── Threads ───────────────────────────────────────────
+
+  /**
+   * List all threads the authenticated user follows, sorted by most
+   * recent reply. Returns the rich shape used by the web sidebar:
+   * parent channel, parent message preview, reply/unread counts, and
+   * (when the parent message is a task) task metadata.
+   *
+   * Results are filtered by the active server's history cutoff — older
+   * threads on free-tier servers are silently dropped, mirroring the
+   * server's `getFollowedThreads` behavior.
+   */
+  async listFollowedThreads(): Promise<{
+    threads: Array<{
+      threadChannelId: string;
+      parentMessageId: string;
+      parentChannelId: string;
+      parentChannelName: string;
+      parentChannelType: string;
+      parentMessagePreview: string;
+      parentMessageSenderType: string;
+      parentMessageSenderId: string;
+      replyCount: number;
+      lastReplyAt: string | null;
+      unreadCount: number;
+      taskNumber: number | null;
+      taskStatus: string | null;
+      taskClaimedByName: string | null;
+    }>;
+  }> {
+    return this.request("GET", "/api/channels/threads/followed");
+  }
+
+  /**
+   * List thread summaries for every parent message in `channelId` that
+   * has at least one reply. The server returns a `Record<parentMessageId, info>`
+   * (NOT an array) — we preserve that shape since it's the natural
+   * lookup form for the typical caller (looking up a thread by its
+   * parent message id). Empty channels return `{}`.
+   */
+  async listChannelThreads(channelId: string): Promise<
+    Record<
+      string,
+      {
+        threadChannelId: string;
+        replyCount: number;
+        lastReplyAt: string | null;
+        participantIds: string[];
+      }
+    >
+  > {
+    return this.request("GET", `/api/channels/${channelId}/threads`);
+  }
+
+  /**
+   * Manually follow a thread by parent message id. The server resolves
+   * the parent message's channel internally and creates the thread
+   * channel if it doesn't already exist (so this is idempotent and
+   * also acts as a "create thread" call).
+   *
+   * Returns the resulting `threadChannelId` so callers can immediately
+   * use it for `messages send --target <threadChannelId>` etc.
+   */
+  async followThread(
+    parentMessageId: string
+  ): Promise<{ ok: true; threadChannelId: string }> {
+    return this.request("POST", "/api/channels/threads/follow", {
+      parentMessageId,
+    });
+  }
+
+  async unfollowThread(threadChannelId: string): Promise<{ ok: true }> {
+    return this.request("POST", "/api/channels/threads/unfollow", {
+      threadChannelId,
+    });
+  }
+
+  /**
+   * Mark a followed thread as "done" — hides it from the active list
+   * until a new reply arrives, at which point the server auto-restores
+   * it. Useful for closing out threads you've finished without
+   * unfollowing them.
+   */
+  async markThreadDone(threadChannelId: string): Promise<{ ok: true }> {
+    return this.request("POST", "/api/channels/threads/done", {
+      threadChannelId,
+    });
+  }
+
+  async markThreadUndone(threadChannelId: string): Promise<{ ok: true }> {
+    return this.request("POST", "/api/channels/threads/undone", {
+      threadChannelId,
+    });
+  }
+
   // ── Messages ──────────────────────────────────────────
 
   /**

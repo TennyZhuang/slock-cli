@@ -133,3 +133,42 @@ export async function resolveTarget(
   const thread = await client.getOrCreateThread(dmChannelId, target.threadId);
   return thread.threadChannelId;
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Resolve a `--thread` flag value to a thread channel UUID.
+ *
+ * Accepts two forms:
+ *   - A raw UUID — assumed to be the thread channel id, returned as-is.
+ *     This is what `threads list` (followed mode) and the server's
+ *     follow/unfollow/done/undone endpoints emit, so round-tripping
+ *     output → input must work without parsing.
+ *   - A target string with an explicit thread segment:
+ *     `#channel:parentMsgShortId` or `dm:@peer:parentMsgShortId`. The
+ *     parent-message short id is what `messages send`/`read` already
+ *     accept, so users who know the parent message but not the thread
+ *     UUID can address it the same way they address the rest of the
+ *     CLI.
+ *
+ * Anything else (a `#channel` without `:`, a `dm:@peer` without `:`,
+ * or a non-UUID non-target string) is rejected — those are channel
+ * targets, not thread targets, and silently treating a channel as a
+ * thread would be very confusing.
+ */
+export async function resolveThread(
+  client: ApiClient,
+  raw: string
+): Promise<string> {
+  if (UUID_RE.test(raw)) {
+    return raw;
+  }
+  const target = parseTarget(raw);
+  if (!target.threadId) {
+    throw new Error(
+      `Invalid thread "${raw}": must be a UUID or include an explicit thread segment ` +
+        `(e.g. "#general:abc123" or "dm:@alice:abc123")`
+    );
+  }
+  return resolveTarget(client, target);
+}

@@ -567,4 +567,136 @@ describe("E2E smoke tests", () => {
     expect(parsed.ok).toBe(false);
     expect(parsed.error.code).toBe("AUTH_FAILED");
   });
+
+  // ── PR-D: threads command smoke tests ──────────────────
+
+  it("shows threads subcommand help", () => {
+    const { stdout, exitCode } = run(["threads", "--help"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("list");
+    expect(stdout).toContain("follow");
+    expect(stdout).toContain("unfollow");
+    expect(stdout).toContain("done");
+    expect(stdout).toContain("undone");
+  });
+
+  it("threads list (followed mode) requires auth", () => {
+    const { stdout, exitCode } = run(["threads", "list"], { expectFail: true });
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("threads list with --target requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["threads", "list", "--target", "#general"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("threads list rejects malformed --target before auth", () => {
+    const { stdout, exitCode } = run(
+      ["threads", "list", "--target", "invalid"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    // parseTarget runs before ensureValidToken (matching the convention
+    // from `messages send` / `messages search`), so a malformed target
+    // is INVALID_ARGS regardless of auth state.
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+  });
+
+  it("threads list rejects --target with thread segment", () => {
+    // A thread-shaped target (e.g. #general:abc123) is meaningful for
+    // `messages send` but nonsensical for `threads list` — you can't
+    // list threads "inside" a thread. Caught at parse time, before auth.
+    const { stdout, exitCode } = run(
+      ["threads", "list", "--target", "#general:abc123"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("must be a channel");
+  });
+
+  it("threads follow requires auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "threads",
+        "follow",
+        "--message-id",
+        "00000000-0000-0000-0000-000000000000",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("threads follow requires --message-id", () => {
+    const { stdout, exitCode } = run(["threads", "follow"], {
+      expectFail: true,
+    });
+    // commander emits its own error (not the JSON envelope) on missing
+    // required option, so just assert it failed and didn't go through
+    // to the auth check.
+    expect(exitCode).toBeGreaterThan(0);
+    expect(stdout).not.toContain("AUTH_FAILED");
+  });
+
+  it("threads unfollow requires auth (with UUID --thread)", () => {
+    const { stdout, exitCode } = run(
+      [
+        "threads",
+        "unfollow",
+        "--thread",
+        "00000000-0000-0000-0000-000000000000",
+      ],
+      { expectFail: true }
+    );
+    // resolveThread short-circuits on UUIDs without hitting the API,
+    // so we reach ensureValidToken → AUTH_FAILED.
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("threads done requires auth (with UUID --thread)", () => {
+    const { stdout, exitCode } = run(
+      ["threads", "done", "--thread", "00000000-0000-0000-0000-000000000000"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("threads undone requires auth (with UUID --thread)", () => {
+    const { stdout, exitCode } = run(
+      [
+        "threads",
+        "undone",
+        "--thread",
+        "00000000-0000-0000-0000-000000000000",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
 });
