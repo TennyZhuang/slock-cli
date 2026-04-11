@@ -740,4 +740,358 @@ describe("E2E smoke tests", () => {
     expect(parsed.ok).toBe(false);
     expect(parsed.error.code).toBe("INVALID_ARGS");
   });
+
+  // ── PR-E: agents command smoke tests ───────────────────
+
+  it("shows agents subcommand help", () => {
+    const { stdout, exitCode } = run(["agents", "--help"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("list");
+    expect(stdout).toContain("get");
+    expect(stdout).toContain("create");
+    expect(stdout).toContain("update");
+    expect(stdout).toContain("delete");
+    expect(stdout).toContain("start");
+    expect(stdout).toContain("stop");
+    expect(stdout).toContain("reset");
+    expect(stdout).toContain("assign-machine");
+  });
+
+  it("agents list requires auth", () => {
+    const { stdout, exitCode } = run(["agents", "list"], { expectFail: true });
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("agents get requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["agents", "get", "--id", "00000000-0000-0000-0000-000000000000"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("agents create requires auth with valid args", () => {
+    const { stdout, exitCode } = run(
+      ["agents", "create", "--name", "test-agent"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("agents create rejects malformed --env before auth", () => {
+    const { stdout, exitCode } = run(
+      ["agents", "create", "--name", "test-agent", "--env", "no_equals_sign"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("--env");
+  });
+
+  it("agents create rejects --env with empty key before auth", () => {
+    const { stdout, exitCode } = run(
+      ["agents", "create", "--name", "test-agent", "--env", "=value"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+  });
+
+  it("agents create rejects invalid --reasoning-effort before auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "create",
+        "--name",
+        "test-agent",
+        "--reasoning-effort",
+        "bogus",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("--reasoning-effort");
+  });
+
+  it("agents update refuses empty PATCH body before auth", () => {
+    const { stdout, exitCode } = run(
+      ["agents", "update", "--id", "00000000-0000-0000-0000-000000000000"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("at least one field");
+  });
+
+  it("agents update rejects --model null before auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "update",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+        "--model",
+        "null",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("--model");
+  });
+
+  it("agents update rejects invalid --reasoning-effort before auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "update",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+        "--reasoning-effort",
+        "bogus",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+  });
+
+  it("agents update rejects --clear-env combined with --env before auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "update",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+        "--clear-env",
+        "--env",
+        "FOO=bar",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("--clear-env");
+  });
+
+  it("agents update with --display-name requires auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "update",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+        "--display-name",
+        "New Name",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("agents delete refuses without --yes", () => {
+    const { stdout, exitCode } = run(
+      ["agents", "delete", "--id", "00000000-0000-0000-0000-000000000000"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("--yes");
+    expect(parsed.error.message).toContain("agents delete");
+  });
+
+  it("agents delete with --yes requires auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "delete",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+        "--yes",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("agents start requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["agents", "start", "--id", "00000000-0000-0000-0000-000000000000"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("agents stop requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["agents", "stop", "--id", "00000000-0000-0000-0000-000000000000"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("agents reset (default mode) requires auth", () => {
+    const { stdout, exitCode } = run(
+      ["agents", "reset", "--id", "00000000-0000-0000-0000-000000000000"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("agents reset rejects invalid --mode before auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "reset",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+        "--mode",
+        "bogus",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("--mode");
+  });
+
+  it("agents reset --mode full refuses without --yes before auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "reset",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+        "--mode",
+        "full",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("--yes");
+  });
+
+  it("agents reset --mode full with --yes requires auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "reset",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+        "--mode",
+        "full",
+        "--yes",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("agents reset --mode session does NOT require --yes (recoverable)", () => {
+    // session reset clears sessionId but leaves the workspace intact, so
+    // the destructive --yes gate should NOT fire — should pass straight
+    // through to auth.
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "reset",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+        "--mode",
+        "session",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("agents assign-machine requires auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "assign-machine",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+        "--machine",
+        "00000000-0000-0000-0000-000000000000",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("agents assign-machine accepts literal 'null' to unassign", () => {
+    // The literal string "null" should NOT be treated as a name lookup;
+    // it short-circuits to JSON null and only the auth check trips.
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "assign-machine",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+        "--machine",
+        "null",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
 });
