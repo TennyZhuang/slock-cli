@@ -1075,6 +1075,77 @@ describe("E2E smoke tests", () => {
     expect(parsed.error.code).toBe("AUTH_FAILED");
   });
 
+  // ── profile command group ────────────────────────────
+
+  it("shows profile subcommand help", () => {
+    const { stdout, exitCode } = run(["profile", "--help"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("list");
+    expect(stdout).toContain("current");
+    expect(stdout).toContain("use");
+    expect(stdout).toContain("remove");
+  });
+
+  it("profile list returns empty array when no profiles exist", () => {
+    const { stdout, exitCode } = run(["profile", "list"], {
+      env: { HOME: "/tmp/slock-cli-e2e-test-empty-profiles" },
+    });
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(true);
+    expect(parsed.data.profiles).toEqual([]);
+    expect(parsed.data.activeProfile).toBe("default");
+  });
+
+  it("profile current fails NOT_FOUND when active profile is missing", () => {
+    const { stdout, exitCode } = run(["profile", "current"], {
+      expectFail: true,
+      env: { HOME: "/tmp/slock-cli-e2e-test-empty-profiles" },
+    });
+    expect(exitCode).toBe(2); // NOT_FOUND
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("NOT_FOUND");
+  });
+
+  it("profile use refuses to switch to a non-existent profile", () => {
+    const { stdout, exitCode } = run(["profile", "use", "ghost"], {
+      expectFail: true,
+      env: { HOME: "/tmp/slock-cli-e2e-test-empty-profiles" },
+    });
+    expect(exitCode).toBe(2); // NOT_FOUND
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("NOT_FOUND");
+  });
+
+  it("profile remove without --yes fails INVALID_ARGS", () => {
+    // Destructive-action gate runs FIRST per `tasks/delete.ts` /
+    // `agents/delete.ts` convention — even before the existence check.
+    const { stdout, exitCode } = run(["profile", "remove", "anything"], {
+      expectFail: true,
+      env: { HOME: "/tmp/slock-cli-e2e-test-empty-profiles" },
+    });
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+  });
+
+  it("profile remove --yes still fails NOT_FOUND for missing profile", () => {
+    const { stdout, exitCode } = run(
+      ["profile", "remove", "ghost", "--yes"],
+      {
+        expectFail: true,
+        env: { HOME: "/tmp/slock-cli-e2e-test-empty-profiles" },
+      }
+    );
+    expect(exitCode).toBe(2);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("NOT_FOUND");
+  });
+
   it("agents assign-machine accepts literal 'null' to unassign", () => {
     // The literal string "null" should NOT be treated as a name lookup;
     // it short-circuits to JSON null and only the auth check trips.

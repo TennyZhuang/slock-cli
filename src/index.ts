@@ -64,6 +64,10 @@ import { registerAgentStartCommand } from "./commands/agents/start.js";
 import { registerAgentStopCommand } from "./commands/agents/stop.js";
 import { registerAgentResetCommand } from "./commands/agents/reset.js";
 import { registerAgentAssignMachineCommand } from "./commands/agents/assign-machine.js";
+import { registerProfileListCommand } from "./commands/profile/list.js";
+import { registerProfileCurrentCommand } from "./commands/profile/current.js";
+import { registerProfileUseCommand } from "./commands/profile/use.js";
+import { registerProfileRemoveCommand } from "./commands/profile/remove.js";
 
 const program = new Command();
 
@@ -205,6 +209,19 @@ registerAgentStartCommand(agentsCmd);
 registerAgentStopCommand(agentsCmd);
 registerAgentResetCommand(agentsCmd);
 registerAgentAssignMachineCommand(agentsCmd);
+
+// ── profile ─────────────────────────────────────────────
+// Manage local profile state — switching active, listing, removing.
+// `auth login --profile <name>` already creates them; `auth logout
+// --profile <name>` revokes server-side. This group is the local-only
+// management surface (no server I/O).
+const profileCmd = program
+  .command("profile")
+  .description("Manage local config profiles");
+registerProfileListCommand(profileCmd);
+registerProfileCurrentCommand(profileCmd);
+registerProfileUseCommand(profileCmd);
+registerProfileRemoveCommand(profileCmd);
 
 program.parseAsync().catch((err) => {
   if (err instanceof CliExit) {
