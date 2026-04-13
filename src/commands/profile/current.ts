@@ -19,9 +19,11 @@ export function registerProfileCurrentCommand(parent: Command): void {
       const name = getGlobalConfig().activeProfile;
       const profile = getProfile(name);
       if (!profile) {
-        // Active profile points at a non-existent file (e.g. profile was
-        // deleted via `profile remove` while still marked active). Surface
-        // this explicitly so users don't get a confusing AUTH_FAILED later.
+        // Active profile points at a non-existent file. `profile remove`
+        // refuses to delete the active one, so this state realistically
+        // arises from `auth logout --profile <active>` or manual edits to
+        // ~/.slock-cli/. Surface explicitly so users don't get a confusing
+        // AUTH_FAILED later.
         fail(
           "NOT_FOUND",
           `Active profile "${name}" has no stored credentials. Run \`slock auth login --profile ${name}\` or \`slock profile use <other>\`.`
