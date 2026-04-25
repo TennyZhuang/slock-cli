@@ -64,6 +64,7 @@ import { registerAgentStartCommand } from "./commands/agents/start.js";
 import { registerAgentStopCommand } from "./commands/agents/stop.js";
 import { registerAgentResetCommand } from "./commands/agents/reset.js";
 import { registerAgentAssignMachineCommand } from "./commands/agents/assign-machine.js";
+import { registerAgentActivityLogCommand } from "./commands/agents/activity-log.js";
 import { registerProfileListCommand } from "./commands/profile/list.js";
 import { registerProfileCurrentCommand } from "./commands/profile/current.js";
 import { registerProfileUseCommand } from "./commands/profile/use.js";
@@ -209,6 +210,7 @@ registerAgentStartCommand(agentsCmd);
 registerAgentStopCommand(agentsCmd);
 registerAgentResetCommand(agentsCmd);
 registerAgentAssignMachineCommand(agentsCmd);
+registerAgentActivityLogCommand(agentsCmd);
 
 // ── profile ─────────────────────────────────────────────
 // Manage local profile state — switching active, listing, removing.

@@ -1165,4 +1165,74 @@ describe("E2E smoke tests", () => {
     expect(parsed.ok).toBe(false);
     expect(parsed.error.code).toBe("AUTH_FAILED");
   });
+
+  // ── agents activity-log ────────────────────────────────
+
+  it("shows agents activity-log in agents subcommand help", () => {
+    const { stdout, exitCode } = run(["agents", "--help"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("activity-log");
+  });
+
+  it("agents activity-log requires --id", () => {
+    const { stdout, exitCode } = run(
+      ["agents", "activity-log"],
+      { expectFail: true }
+    );
+    expect(exitCode).toBeGreaterThan(0);
+    expect(stdout).not.toContain("AUTH_FAILED");
+  });
+
+  it("agents activity-log requires auth", () => {
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "activity-log",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(4);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("AUTH_FAILED");
+  });
+
+  it("agents activity-log --limit validates positive integer", () => {
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "activity-log",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+        "--limit",
+        "abc",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+    expect(parsed.error.message).toContain("positive integer");
+  });
+
+  it("agents activity-log --limit rejects zero", () => {
+    const { stdout, exitCode } = run(
+      [
+        "agents",
+        "activity-log",
+        "--id",
+        "00000000-0000-0000-0000-000000000000",
+        "--limit",
+        "0",
+      ],
+      { expectFail: true }
+    );
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("INVALID_ARGS");
+  });
 });
