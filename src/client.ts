@@ -753,6 +753,41 @@ export class ApiClient {
     });
   }
 
+  /**
+   * Fetch the durable activity log for an agent.
+   *
+   * Wraps `GET /api/agents/:id/activity-log`. Server returns entries in
+   * reverse-chronological order (newest first). The `limit` query param
+   * caps the returned entries; the server does not enforce a maximum
+   * so we pass whatever the caller specifies (default 50, matching the
+   * API example in the documentation).
+   *
+   * Each entry has:
+   *   - `timestamp` (ms epoch)
+   *   - `entry.kind` ("tool_start" | "tool_end" | etc.)
+   *   - `entry.toolName` (string, present on tool entries)
+   *   - `entry.toolInput` (optional)
+   *   - `entry.toolOutput` (optional)
+   */
+  async getAgentActivityLog(
+    agentId: string,
+    limit?: number
+  ): Promise<
+    Array<{
+      timestamp: number;
+      entry: {
+        kind: string;
+        toolName?: string;
+        toolInput?: string;
+        toolOutput?: string;
+        [key: string]: unknown;
+      };
+    }>
+  > {
+    const params = limit ? `?limit=${limit}` : "";
+    return this.request("GET", `/api/agents/${agentId}/activity-log${params}`);
+  }
+
   // ── Server ────────────────────────────────────────────
 
   /**

@@ -120,6 +120,23 @@ If `--save-to` write fails after the server has already created the machine, the
 
 `machines rename` and `machines delete` accept either `--id <uuid>` for an exact match or `--name <name>` for a lookup against `machines list`. If multiple machines share a name, the lookup fails with a disambiguation hint and you must pass `--id`.
 
+### agents
+
+```bash
+slock agents list
+slock agents get --id <uuid-or-name>
+slock agents create --name <name> [--description <desc>] [--model <model>] [--runtime <runtime>]
+slock agents update --id <uuid-or-name> [--display-name <name>] [--description <desc>] [--avatar-url <url>]
+slock agents delete --id <uuid-or-name>
+slock agents start --id <uuid-or-name>
+slock agents stop --id <uuid-or-name>
+slock agents reset --id <uuid-or-name> [--mode restart|session|full]
+slock agents assign-machine --id <uuid-or-name> [--machine <uuid-or-name>]
+slock agents activity-log --id <uuid-or-name> [--limit <n>]
+```
+
+**`agents activity-log`** fetches the durable activity log for an agent, including tool invocations, thinking processes, and status changes. Entries are returned in reverse-chronological order (newest first). The `--limit` option controls the number of entries (default 50).
+
 ### attachments
 
 ```bash
